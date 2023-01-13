@@ -1,15 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include<unistd.h>
-#include<errno.h>
-#include<sys/types.h>
-#include<sys/stat.h>
+#include <direct.h>
 #define MAX_SIZE 20
 
 char command[50];
 void createfile();
 void clear(char ch[]);
+void make_dir(char address);
 
 int main()
 {
@@ -38,19 +36,21 @@ void clear(char ch[]){
 void createfile(){
     char buff[10],address[50];
     scanf("%s",buff);
-    if(strcmp(buff,"--f")){
+    if(strcmp(buff,"-file")){
         char ch[50];
         scanf("%[^\n]%*c",ch);
-        printf("Invalid Input\n");
+        printf("Invalid input\n");
         return;
     }
-    clear(command);
+    char ch=getchar();
+    ch=getchar();
     gets(address);
     int length=strlen(address);
     if(address[0]=='"' && address[0]=='"'){
 
     }
     else{
-        printf("%d",mkdir(address));
+        printf("%s\n",address);
+        printf("%d\n",mkdir(address));
     }
 }
