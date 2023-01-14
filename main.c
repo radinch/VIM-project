@@ -9,6 +9,7 @@ void createfile();
 void clear(char ch[]);
 void make_dir(char address[]);
 void delete_quote(char address[]);
+void cat();
 
 int main()
 {
@@ -19,8 +20,11 @@ int main()
             printf("Good Luck!");
             flag=0;
         }
-        if(!strcmp(command,"createfile")){
+        else if(!strcmp(command,"createfile")){
             createfile();
+        }
+        else if(!strcmp(command,"cat")){
+            cat();
         }
         clear(command);
     }
@@ -90,3 +94,34 @@ void createfile(){
     }
 }
 
+void cat(){
+    char buff[100],address[100];
+    scanf("%s",buff);
+    if(strcmp(buff,"-file")){
+        char ch[50];
+        scanf("%[^\n]%*c",ch);
+        printf("Invalid command\n");
+        return;
+    }
+    char ch=getchar();
+    ch=getchar();
+    scanf("%[^\n]%*c",address);
+    int length=strlen(address);
+    if(ch=='"' && address[length-1]=='"'){
+        delete_quote(address);
+    }
+    if(access(address,F_OK)!=0){
+        printf("Error: This file does not exist\n");
+    }
+    else{
+        FILE * f=fopen(address,"r");
+        char c="a";
+        while(c!=EOF){
+            c=getc(f);
+            if(c!=EOF)
+            printf("%c",c);
+        }
+        printf("\n");
+    }
+
+}
