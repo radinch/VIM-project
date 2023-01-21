@@ -26,6 +26,7 @@ void input_string(char string[]);
 int check_correctness(char * p,int length,char temp[]);//for checking weather the absolute word is found or not
 void check_find_options(int *options,int *n);
 int convert_string(char string[]);
+int count_words(char *string,char *p);
 
 int main(){
     int flag=1;
@@ -241,6 +242,16 @@ int convert_stiring(char string[]){
     clear(string);
     strcpy(string,buff);
     return flag;
+}
+
+int count_words(char *string,char *p){
+    int count=0;
+    for(int i=0;string+i<p;i++){
+        if(i!=0 && string[i]==' ' && string[i+1]!=' ' && string[i+1]!='\n'){
+            count++;
+        }
+    }
+    return count+1;
 }
 
 void createfile(){
@@ -696,7 +707,8 @@ void find(){
     int line_no,start_pos; //for position of string
     char buff[MAX_SIZE]={0},address[MAX_SIZE]={0},string[MAX_SIZE]={0},temp[MAX_SIZE]={0};
     int flag=0; //for checking the existence of the string
-    int *options=(int *)malloc(sizeof(int)*4),*n; //just for checking this useless options
+    int n=1;
+    int *options=(int *)malloc(sizeof(int)*4),*ptr=&n; //just for checking this useless options
     for(int i=0;i<4;i++){
         *(options+i)=0;
     }
@@ -722,38 +734,91 @@ void find(){
         printf("Error: This file does not exist\n");
         return;
     }
-    check_find_options(options,n);
+    check_find_options(options,ptr);
     FILE * file =fopen(address,"r");
-    if(*options==1){
+    if(*options){
+        if(*(options+1)==0 && *(options+2)==0 && *(options+3)==0){
+            char *p;
+            int count=0;
+            while(fgets(temp,MAX_SIZE,file)!=NULL){
+                for(int i=0;i<strlen(temp);i++){
+                    if(strstr(temp+i,string)!=NULL){
+                        char *p=strstr(temp+i,string);
+                        int length=strlen(string);
+                        if(check_correctness(p,length,temp)){
+                            if(temp+i==p)
+                                count++;
+                        }
+                    }
+                }
+                clear(temp);
+            }
+            printf("This phrase was found %d times\n",count);
+        }
+        else{
+            printf("You cannot use these options simultaneously\n");
+        }
+    }
+    else if(*(options+3) && *(options+1)){
+        printf("You cannot use these options simultaneously\n");
+    }
+    else if(*(options+3)){
         char *p;
+        int countChar=0;
+        int countWord=0;
         int count=0;
         while(fgets(temp,MAX_SIZE,file)!=NULL){
+            p=temp+strlen(temp)-1;
             for(int i=0;i<strlen(temp);i++){
                 if(strstr(temp+i,string)!=NULL){
-                    char *p=strstr(temp+i,string);
+                    p=strstr(temp+i,string);
                     int length=strlen(string);
                     if(check_correctness(p,length,temp)){
-                        if(temp+i==p)
-                            count++;
+                        if(temp+i==p){
+                            flag=1;
+                            if(*(options+2)){
+                                printf("%d ",countWord+count_words(temp,p));
+                            }
+                            else{
+                                printf("%d ",countChar+p-temp);
+                            }
+                        }
                     }
                 }
             }
+            countChar+=strlen(temp);
+            p=temp+strlen(temp)-1;
+            countWord+=count_words(temp,p);
             clear(temp);
         }
-        printf("This phrase was found %d times\n",count);
+        if(flag==0){
+            printf("%d\n",-1);
+        }
+        else{
+            printf("\n");
+        }
     }
     else{
         char *p;
         int countChar=0;
+        int countWord=0;
+        int count=0;
         while(fgets(temp,MAX_SIZE,file)!=NULL){
+            p=temp+strlen(temp)-1;
             for(int i=0;i<strlen(temp);i++){
                 if(strstr(temp+i,string)!=NULL){
-                    char *p=strstr(temp+i,string);
+                    p=strstr(temp+i,string);
                     int length=strlen(string);
                     if(check_correctness(p,length,temp)){
-                        countChar+=p-temp;
-                        flag=1;
-                        break;
+                        if(temp+i==p){
+                            count++;
+                        }
+                        if(count==n){
+                            countChar+=p-temp;
+                            countWord+=count_words(temp,p);
+                            flag=1;
+                            break;
+                        }
                     }
                 }
             }
@@ -761,10 +826,15 @@ void find(){
                 break;
             }
             countChar+=strlen(temp);
+            p=temp+strlen(temp)-1;
+            countWord+=count_words(temp,p);
             clear(temp);
         }
         if(flag==0){
             printf("%d\n",-1);
+        }
+        else if(*(options+2)){
+            printf("%d\n",countWord);
         }
         else{
             printf("Found: index of the first Character is [%d]\n",countChar);
