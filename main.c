@@ -16,6 +16,8 @@ void copystr();
 void cutstr();
 void pastestr();
 void find();
+void grep();
+void undo();
 
 //Auxiliary functions
 void clear(char ch[]);
@@ -25,8 +27,11 @@ void input_file_address(char address[]);
 void input_string(char string[]);
 int check_correctness(char * p,int length,char temp[]);//for checking weather the absolute word is found or not
 void check_find_options(int *options,int *n);
-int convert_string(char string[]);
+int convert_stiring(char string[]);
 int count_words(char *string,char *p);
+void check_grep_options(int mark[],char string[]);
+void input_file_address_v2(char address[]);
+
 
 int main(){
     int flag=1;
@@ -59,6 +64,12 @@ int main(){
         }
         else if(!strcmp(command,"find")){
             find();
+        }
+        else if(!strcmp(command,"grep")){
+            grep();
+        }
+        else if(!strcmp(command,"undo")){
+            undo();
         }
         else{
             char junk[100]; //to avoid repeating print invalid command
@@ -106,6 +117,8 @@ void delete_quote_v1(char address[]){
 }
 
 void input_file_address(char address[]){
+    FILE *und=fopen("undo.txt","w");
+    char temp[MAX_SIZE];
     char ch=getchar();
     ch=getchar();
     if(ch=='"'){
@@ -124,8 +137,32 @@ void input_file_address(char address[]){
     if(ch=='"' && address[length-1]=='"'){
         delete_quote_v1(address);
     }
+    FILE * file=fopen(address,"r");
+    while(fgets(temp,MAX_SIZE,file)!=NULL){
+        fputs(temp,und);
+    }
+    fclose(und);
+    fclose(file);
 }
-
+void input_file_address_v2(char address[]){
+    char ch=getchar();
+    if(ch=='"'){
+        ch=0;
+        int count=0;
+        while(ch!='"'){
+            ch=getchar();
+            address[count]=ch;
+            count++;
+        }
+    }
+    else{
+        scanf("%s",address);
+    }
+    int length=strlen(address);
+    if(ch=='"' && address[length-1]=='"'){
+        delete_quote_v1(address);
+    }
+}
 void input_string(char string[]){
     char ch;
     ch=getchar();
@@ -198,6 +235,35 @@ void check_find_options(int *options,int *n){
     }
 }
 
+void check_grep_options(int mark[],char string[]){
+    char flag[MAX_SIZE]={0};
+    char ch;
+    ch=getchar();
+    while(ch!='\n'){
+        scanf("%s",flag);
+        if(!strcmp(flag,"--str")){
+            input_string(string);
+        }
+        else if(!strcmp(flag,"--files")){
+            return;
+        }
+        else if(!strcmp(flag,"-c")){
+            mark[0]=1;
+        }
+        else if(!strcmp(flag,"-l")){
+            mark[1]=1;
+        }
+        else{
+            char ch[50];
+            scanf("%[^\n]%*c",ch);
+            printf("Invalid command\n");
+            return;
+        }
+        clear(flag);
+        ch=getchar();
+    }
+}
+
 int convert_stiring(char string[]){
     char buff[MAX_SIZE]={0};
     int count=0;
@@ -257,7 +323,7 @@ int count_words(char *string,char *p){
 void createfile(){
     char buff[MAX_SIZE],address[MAX_SIZE];
     scanf("%s",buff);
-    if(strcmp(buff,"-file")){
+    if(strcmp(buff,"--file")){
         char ch[50];
         scanf("%[^\n]%*c",ch);
         printf("Invalid command\n");
@@ -285,7 +351,7 @@ void createfile(){
 void cat(){
     char buff[MAX_SIZE],address[MAX_SIZE];
     scanf("%s",buff);
-    if(strcmp(buff,"-file")){
+    if(strcmp(buff,"--file")){
         char ch[50];
         scanf("%[^\n]%*c",ch);
         printf("Invalid command\n");
@@ -317,7 +383,7 @@ void insertstr(){
     int line_no,start_pos; //for position of string
     char buff[MAX_SIZE]={0},address[MAX_SIZE]={0},string[MAX_SIZE]={0};
     scanf("%s",buff);
-    if(strcmp(buff,"-file")){
+    if(strcmp(buff,"--file")){
         char ch[50];
         scanf("%[^\n]%*c",ch);
         printf("Invalid command\n");
@@ -326,7 +392,7 @@ void insertstr(){
     input_file_address(address);
     clear(buff);
     scanf("%s",buff);
-    if(strcmp(buff,"-str")){
+    if(strcmp(buff,"--str")){
         char ch[50];
         scanf("%[^\n]%*c",ch);
         printf("Invalid command\n");
@@ -335,7 +401,7 @@ void insertstr(){
     input_string(string);
     clear(buff);
     scanf("%s",buff);
-    if(strcmp(buff,"-pos")){
+    if(strcmp(buff,"--pos")){
         char ch[50];
         scanf("%[^\n]%*c",ch);
         printf("Invalid command\n");
@@ -389,7 +455,7 @@ void removestr(){
     int buffer=0;
     char buff[MAX_SIZE]={0},address[MAX_SIZE]={0};
     scanf("%s",buff);
-    if(strcmp(buff,"-file")){
+    if(strcmp(buff,"--file")){
         char ch[50];
         scanf("%[^\n]%*c",ch);
         printf("Invalid command\n");
@@ -398,7 +464,7 @@ void removestr(){
     input_file_address(address);
     clear(buff);
     scanf("%s",buff);
-    if(strcmp(buff,"-pos")){
+    if(strcmp(buff,"--pos")){
         char ch[50];
         scanf("%[^\n]%*c",ch);
         printf("Invalid command\n");
@@ -471,7 +537,7 @@ void copystr(){
     int buffer=0;
     char buff[100]={0},address[100]={0};
     scanf("%s",buff);
-    if(strcmp(buff,"-file")){
+    if(strcmp(buff,"--file")){
         char ch[50];
         scanf("%[^\n]%*c",ch);
         printf("Invalid command\n");
@@ -480,7 +546,7 @@ void copystr(){
     input_file_address(address);
     clear(buff);
     scanf("%s",buff);
-    if(strcmp(buff,"-pos")){
+    if(strcmp(buff,"--pos")){
         char ch[50];
         scanf("%[^\n]%*c",ch);
         printf("Invalid command\n");
@@ -560,7 +626,7 @@ void cutstr(){
     int buffer=0;
     char buff[MAX_SIZE]={0},address[MAX_SIZE]={0};
     scanf("%s",buff);
-    if(strcmp(buff,"-file")){
+    if(strcmp(buff,"--file")){
         char ch[50];
         scanf("%[^\n]%*c",ch);
         printf("Invalid command\n");
@@ -569,7 +635,7 @@ void cutstr(){
     input_file_address(address);
     clear(buff);
     scanf("%s",buff);
-    if(strcmp(buff,"-pos")){
+    if(strcmp(buff,"--pos")){
         char ch[50];
         scanf("%[^\n]%*c",ch);
         printf("Invalid command\n");
@@ -648,7 +714,7 @@ void pastestr(){
     int line_no,start_pos; //for position of string
     char buff[MAX_SIZE]={0},address[MAX_SIZE]={0},string[MAX_SIZE]={0};
     scanf("%s",buff);
-    if(strcmp(buff,"-file")){
+    if(strcmp(buff,"--file")){
         char ch[50];
         scanf("%[^\n]%*c",ch);
         printf("Invalid command\n");
@@ -657,7 +723,7 @@ void pastestr(){
     input_file_address(address);
     clear(buff);
     scanf("%s",buff);
-    if(strcmp(buff,"-pos")){
+    if(strcmp(buff,"--pos")){
         char ch[50];
         scanf("%[^\n]%*c",ch);
         printf("Invalid command\n");
@@ -713,7 +779,7 @@ void find(){
         *(options+i)=0;
     }
     scanf("%s",buff);
-    if(strcmp(buff,"-str")){
+    if(strcmp(buff,"--str")){
         char ch[50];
         scanf("%[^\n]%*c",ch);
         printf("Invalid command\n");
@@ -723,7 +789,7 @@ void find(){
     convert_stiring(string);
     clear(buff);
     scanf("%s",buff);
-    if(strcmp(buff,"-file")){
+    if(strcmp(buff,"--file")){
         char ch[50];
         scanf("%[^\n]%*c",ch);
         printf("Invalid command\n");
@@ -841,4 +907,66 @@ void find(){
         }
     }
     fclose(file);
+}
+
+void grep(){
+    char buff[MAX_SIZE]={0},address[MAX_SIZE]={0},string[MAX_SIZE]={0},temp[MAX_SIZE]={0};
+    int mark[2]={0,0};
+    check_grep_options(mark,string);
+    convert_stiring(string);
+    char ch=0;
+    ch=getchar();
+    int count_lines=0;
+    FILE *file;
+    int flag1=0;
+    int flag2=0;
+    while(ch!='\n'){
+        input_file_address_v2(address);
+        if(access(address,F_OK)!=0){
+            printf("Error: /%s does not exist\nplease input the file again\n",address);
+            return;
+        }
+        file=fopen(address,"r");
+        while(fgets(temp,MAX_SIZE,file)!=NULL){
+            if(strstr(temp,string)!=NULL){
+                count_lines++;
+                if(mark[1]==1){
+                    printf("%s\n",address);
+                    flag1=1;
+                    break;
+                }
+                if(mark[0]==0 && mark[1]==0){
+                    flag2=1;
+                    for(int i=0;i<strlen(temp);i++){
+                        if(temp[i]!='\n'){
+                            printf("%c",temp[i]);
+                        }
+                    }
+                    printf("\n");
+                }
+            }
+        }
+        clear(address);
+        ch=getchar();
+    }
+    fclose(file);
+    if(mark[0]==1){
+        printf("%d\n",count_lines);
+    }
+    else if(flag1==0 && flag2==0){
+        printf("This pattern does not exist in any file\n");
+    }
+
+}
+void undo(){
+    char buff[MAX_SIZE]={0},address[MAX_SIZE]={0},string[MAX_SIZE]={0},temp[MAX_SIZE]={0};
+    scanf("%s",buff);
+    input_file_address(address);
+    FILE *file=fopen(address,"w"),*und=fopen("undo.txt","r");
+    while(fgets(temp,MAX_SIZE,und)!=NULL){
+        fputs(temp,file);
+    }
+    fclose(file);
+    fclose(und);
+    printf("Success\n");
 }
