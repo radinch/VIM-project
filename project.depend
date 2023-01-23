@@ -1,10 +1,7 @@
 # depslib dependency file v1.0
-1673553823 source:c:\users\ideapad 5\desktop\project\main.c
+1674500026 source:c:\users\ideapad 5\desktop\project\main.c
 	<stdio.h>
 	<stdlib.h>
 	<string.h>
-	<unistd.h>
-	<errno.h>
-	<sys/types.h>
-	<sys/stat.h>
+	<direct.h>
 

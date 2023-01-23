@@ -18,6 +18,7 @@ void pastestr();
 void find();
 void grep();
 void undo();
+void text_comparator();
 
 //Auxiliary functions
 void clear(char ch[]);
@@ -70,6 +71,9 @@ int main(){
         }
         else if(!strcmp(command,"undo")){
             undo();
+        }
+        else if(!strcmp(command,"compare")){
+            text_comparator();
         }
         else{
             char junk[100]; //to avoid repeating print invalid command
@@ -1006,6 +1010,7 @@ void grep(){
     }
 
 }
+
 void undo(){
     char buff[MAX_SIZE]={0},address[MAX_SIZE]={0},string[MAX_SIZE]={0},temp[MAX_SIZE]={0};
     char buffer[MAX_SIZE]={0};
@@ -1027,6 +1032,10 @@ void undo(){
     int length=strlen(address);
     if(ch=='"' && address[length-1]=='"'){
         delete_quote_v1(address);
+    }
+    if(access(address,F_OK)!=0){
+        printf("Error: This file does not exist\n");
+        return;
     }
     file_name(address,buffer);
     int n=strlen(buffer);
@@ -1055,4 +1064,86 @@ void undo(){
     fclose(file);
     fclose(und);
     printf("Success\n");
+}
+
+void text_comparator(){
+    int count=0;
+    int line_number=0;
+    int flag1=1,flag2=1;
+    char address1[MAX_SIZE]={0},address2[MAX_SIZE]={0};
+    char temp1[MAX_SIZE]={0},temp2[MAX_SIZE]={0};
+    char buff[MAX_SIZE][MAX_SIZE]={0};
+    input_file_address(address1);
+    input_file_address(address2);
+    if(access(address1,F_OK)!=0){
+        printf("Error: /%s does not exist\nplease input the file again\n",address1);
+        return;
+    }
+    if(access(address2,F_OK)!=0){
+        printf("Error: /%s does not exist\nplease input the file again\n",address2);
+        return;
+    }
+    FILE *file1=fopen(address1,"r"),*file2=fopen(address2,"r");
+    while(flag1 && flag2){
+        if(fgets(temp1,MAX_SIZE,file1)==NULL){
+            flag1=0;
+        }
+        if(fgets(temp2,MAX_SIZE,file2)==NULL){
+            flag2=0;
+        }
+        line_number++;
+        if(flag1==0 || flag2==0){
+            break;
+        }
+        if(strcmp(temp1,temp2)){
+            printf("============ #%d ============\n",line_number);
+            for(int i=0;i<strlen(temp1);i++){
+                if(temp1[i]!='\n'){
+                    printf("%c",temp1[i]);
+                }
+            }
+            printf("\n");
+            for(int i=0;i<strlen(temp2);i++){
+                if(temp2[i]!='\n'){
+                    printf("%c",temp2[i]);
+                }
+            }
+            printf("\n");
+        }
+    }
+    if(flag1==0 && flag2==0){
+        return;
+    }
+    else if(flag1==0){
+        int end_line=line_number;
+        do{
+            for(int i=0;i<strlen(temp2);i++){
+                if(temp2[i]!='\n'){
+                    buff[count][i]=temp2[i];
+                }
+            }
+            count++;
+            end_line++;
+        }while(fgets(temp2,MAX_SIZE,file2)!=NULL);
+        printf(">>>>>>>>>>>> #%d - #%d >>>>>>>>>>>>\n",line_number,end_line-1);
+        for(int i=0;i<count;i++){
+            printf("%s\n",buff[i]);
+        }
+    }
+    else{
+        int end_line=line_number;
+        do{
+            for(int i=0;i<strlen(temp1);i++){
+                if(temp1[i]!='\n'){
+                    buff[count][i]=temp1[i];
+                }
+            }
+            count++;
+            end_line++;
+        }while(fgets(temp1,MAX_SIZE,file1)!=NULL);
+        printf("<<<<<<<<<<<< #%d - #%d <<<<<<<<<<<<\n",line_number,end_line-1);
+        for(int i=0;i<count;i++){
+            printf("%s\n",buff[i]);
+        }
+    }
 }
