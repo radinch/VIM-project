@@ -31,7 +31,7 @@ int convert_stiring(char string[]);
 int count_words(char *string,char *p);
 void check_grep_options(int mark[],char string[]);
 void input_file_address_v2(char address[]);
-
+void file_name(char address[],char buffer[]);
 
 int main(){
     int flag=1;
@@ -116,9 +116,34 @@ void delete_quote_v1(char address[]){
     }
 }
 
+void file_name(char address[],char buffer[]){
+    clear(buffer);
+    buffer[0]='u';
+    buffer[1]='/';
+    int count=strlen(address)-1;
+    while(address[count-1]!='/'){
+        count--;
+    }
+    for(int i=count;i<strlen(address);i++){
+        buffer[i-count+2]=address[i];
+    }
+}
+void file_name_2(char address[],char buffer[]){
+    clear(buffer);
+    buffer[0]='u';
+    buffer[1]='/';
+    buffer[2]='.';
+    int count=strlen(address)-1;
+    while(address[count-1]!='/'){
+        count--;
+    }
+    for(int i=count;i<strlen(address);i++){
+        buffer[i-count+3]=address[i];
+    }
+}
 void input_file_address(char address[]){
-    FILE *und=fopen("undo.txt","w");
-    char temp[MAX_SIZE];
+    char buffer[MAX_SIZE]={0};
+    char temp[MAX_SIZE]={0};
     char ch=getchar();
     ch=getchar();
     if(ch=='"'){
@@ -137,6 +162,8 @@ void input_file_address(char address[]){
     if(ch=='"' && address[length-1]=='"'){
         delete_quote_v1(address);
     }
+    file_name(address,buffer);
+    FILE *und=fopen(buffer,"w");
     FILE * file=fopen(address,"r");
     while(fgets(temp,MAX_SIZE,file)!=NULL){
         fputs(temp,und);
@@ -144,7 +171,10 @@ void input_file_address(char address[]){
     fclose(und);
     fclose(file);
 }
+
 void input_file_address_v2(char address[]){
+    char buffer[MAX_SIZE]={0};
+    char temp[MAX_SIZE]={0};
     char ch=getchar();
     if(ch=='"'){
         ch=0;
@@ -162,7 +192,16 @@ void input_file_address_v2(char address[]){
     if(ch=='"' && address[length-1]=='"'){
         delete_quote_v1(address);
     }
+    file_name(address,buffer);
+    FILE *und=fopen(buffer,"w");
+    FILE * file=fopen(address,"r");
+    while(fgets(temp,MAX_SIZE,file)!=NULL){
+        fputs(temp,und);
+    }
+    fclose(und);
+    fclose(file);
 }
+
 void input_string(char string[]){
     char ch;
     ch=getchar();
@@ -357,13 +396,7 @@ void cat(){
         printf("Invalid command\n");
         return;
     }
-    char ch=getchar();
-    ch=getchar();
-    scanf("%[^\n]%*c",address);
-    int length=strlen(address);
-    if(ch=='"' && address[length-1]=='"'){
-        delete_quote_v1(address);
-    }
+    input_file_address(address);
     if(access(address,F_OK)!=0){
         printf("Error: This file does not exist\n");
     }
@@ -910,7 +943,7 @@ void find(){
 }
 
 void grep(){
-    char buff[MAX_SIZE]={0},address[MAX_SIZE]={0},string[MAX_SIZE]={0},temp[MAX_SIZE]={0};
+    char buff1[MAX_SIZE][MAX_SIZE]={0},buff2[MAX_SIZE][MAX_SIZE]={0},address[MAX_SIZE]={0},string[MAX_SIZE]={0},temp[MAX_SIZE]={0};
     int mark[2]={0,0};
     check_grep_options(mark,string);
     convert_stiring(string);
@@ -920,6 +953,8 @@ void grep(){
     FILE *file;
     int flag1=0;
     int flag2=0;
+    int count1=0;
+    int count2=0;
     while(ch!='\n'){
         input_file_address_v2(address);
         if(access(address,F_OK)!=0){
@@ -931,7 +966,10 @@ void grep(){
             if(strstr(temp,string)!=NULL){
                 count_lines++;
                 if(mark[1]==1){
-                    printf("%s\n",address);
+                    for(int i=0;i<strlen(address);i++){
+                        buff1[count1][i]=address[i];
+                    }
+                    count1++;
                     flag1=1;
                     break;
                 }
@@ -939,10 +977,10 @@ void grep(){
                     flag2=1;
                     for(int i=0;i<strlen(temp);i++){
                         if(temp[i]!='\n'){
-                            printf("%c",temp[i]);
+                            buff2[count2][i]=temp[i];
                         }
                     }
-                    printf("\n");
+                    count2++;
                 }
             }
         }
@@ -953,6 +991,16 @@ void grep(){
     if(mark[0]==1){
         printf("%d\n",count_lines);
     }
+    else if(flag1==1){
+        for(int i=0;i<count1;i++){
+            printf("%s\n",buff1[i]);
+        }
+    }
+    else if(flag2==1){
+        for(int i=0;i<count2;i++){
+            printf("%s\n",buff2[i]);
+        }
+    }
     else if(flag1==0 && flag2==0){
         printf("This pattern does not exist in any file\n");
     }
@@ -960,11 +1008,49 @@ void grep(){
 }
 void undo(){
     char buff[MAX_SIZE]={0},address[MAX_SIZE]={0},string[MAX_SIZE]={0},temp[MAX_SIZE]={0};
+    char buffer[MAX_SIZE]={0};
     scanf("%s",buff);
-    input_file_address(address);
-    FILE *file=fopen(address,"w"),*und=fopen("undo.txt","r");
+    char ch=getchar();
+    ch=getchar();
+    if(ch=='"'){
+        ch=0;
+        int count=0;
+        while(ch!='"'){
+            ch=getchar();
+            address[count]=ch;
+            count++;
+        }
+    }
+    else{
+        scanf("%s",address);
+    }
+    int length=strlen(address);
+    if(ch=='"' && address[length-1]=='"'){
+        delete_quote_v1(address);
+    }
+    file_name(address,buffer);
+    int n=strlen(buffer);
+    file_name_2(address,buffer);
+    FILE *file=fopen(address,"r"),*und=fopen(buffer,"w");
+    while(fgets(temp,MAX_SIZE,file)!=NULL){
+        fputs(temp,und);
+    }
+    fclose(file);
+    fclose(und);
+    file_name(address,buffer);
+    file=fopen(address,"w");
+    und=fopen(buffer,"r");
     while(fgets(temp,MAX_SIZE,und)!=NULL){
         fputs(temp,file);
+    }
+    fclose(file);
+    fclose(und);
+    file_name_2(address,buffer);
+    file=fopen(buffer,"r");
+    file_name(address,buffer);
+    und=fopen(buffer,"w");
+    while(fgets(temp,MAX_SIZE,file)!=NULL){
+        fputs(temp,und);
     }
     fclose(file);
     fclose(und);
