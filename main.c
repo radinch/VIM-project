@@ -2,15 +2,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <direct.h>
+#include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #define MAX_SIZE 1000
 
 char command[MAX_SIZE];
 char clipboard[MAX_SIZE];
 
 //Main commands
-void createfile();
-void cat();
-void insertstr();
+void createfile(char address[]);
+void cat(char address[]);
+void insertstr(char address[],char string[],int line_no,int start_pos);
 void removestr();
 void copystr();
 void cutstr();
@@ -19,6 +23,7 @@ void find();
 void grep();
 void undo();
 void text_comparator();
+void tree(int depth,int depth_buff,char *directory);
 
 //Auxiliary functions
 void clear(char ch[]);
@@ -33,8 +38,10 @@ int count_words(char *string,char *p);
 void check_grep_options(int mark[],char string[]);
 void input_file_address_v2(char address[]);
 void file_name(char address[],char buffer[]);
+int is_dir(char *filename);
 
 int main(){
+    char buff[MAX_SIZE],address[MAX_SIZE],string[MAX_SIZE];
     int flag=1;
     while(flag){
         scanf("%s",command);
@@ -43,13 +50,64 @@ int main(){
             flag=0;
         }
         else if(!strcmp(command,"createfile")){
-            createfile();
+            clear(address);
+            clear(buff);
+            scanf("%s",buff);
+            if(strcmp(buff,"--file")){
+                char ch[50];
+                scanf("%[^\n]%*c",ch);
+                printf("Invalid command\n");
+                continue;
+            }
+            input_file_address(address);
+            createfile(address);
         }
         else if(!strcmp(command,"cat")){
-            cat();
+            clear(address);
+            clear(buff);
+            scanf("%s",buff);
+            if(strcmp(buff,"--file")){
+                char ch[50];
+                scanf("%[^\n]%*c",ch);
+                printf("Invalid command\n");
+                continue;
+            }
+            input_file_address(address);
+            cat(address);
         }
         else if(!strcmp(command,"insertstr")){
-            insertstr();
+            clear(buff);
+            clear(address);
+            clear(string);
+            int line_no,start_pos; //for position of string
+            scanf("%s",buff);
+            if(strcmp(buff,"--file")){
+                char ch[50];
+                scanf("%[^\n]%*c",ch);
+                printf("Invalid command\n");
+                continue;
+            }
+            input_file_address(address);
+            clear(buff);
+            scanf("%s",buff);
+            if(strcmp(buff,"--str")){
+                char ch[50];
+                scanf("%[^\n]%*c",ch);
+                printf("Invalid command\n");
+                continue;
+            }
+            input_string(string);
+            clear(buff);
+            scanf("%s",buff);
+            if(strcmp(buff,"--pos")){
+                char ch[50];
+                scanf("%[^\n]%*c",ch);
+                printf("Invalid command\n");
+                continue;
+            }
+            char ch;
+            scanf("%d%c%d",&line_no,&ch,&start_pos);
+            insertstr(address,string,line_no,start_pos);
         }
         else if(!strcmp(command,"removestr")){
             removestr();
@@ -74,6 +132,18 @@ int main(){
         }
         else if(!strcmp(command,"compare")){
             text_comparator();
+        }
+        else if(!strcmp(command,"tree")){
+            int depth;
+            char *directory=(char *)malloc(MAX_SIZE*sizeof(char));
+            char *dir_buff=(char *)malloc(MAX_SIZE*sizeof(char));
+            strcpy(directory,"./root");
+            scanf("%d",&depth);
+            if(depth<=-1){
+                printf("Invalid depth\n");
+                continue;
+            }
+            tree(depth,depth,directory);
         }
         else{
             char junk[100]; //to avoid repeating print invalid command
@@ -132,6 +202,7 @@ void file_name(char address[],char buffer[]){
         buffer[i-count+2]=address[i];
     }
 }
+
 void file_name_2(char address[],char buffer[]){
     clear(buffer);
     buffer[0]='u';
@@ -145,6 +216,18 @@ void file_name_2(char address[],char buffer[]){
         buffer[i-count+3]=address[i];
     }
 }
+
+void file_name_3(char address[],char buffer[]){
+    clear(buffer);
+    int count=strlen(address)-1;
+    while(address[count-1]!='/'){
+        count--;
+    }
+    for(int i=count;i<strlen(address);i++){
+        buffer[i-count]=address[i];
+    }
+}
+
 void input_file_address(char address[]){
     char buffer[MAX_SIZE]={0};
     char temp[MAX_SIZE]={0};
@@ -363,22 +446,7 @@ int count_words(char *string,char *p){
     return count+1;
 }
 
-void createfile(){
-    char buff[MAX_SIZE],address[MAX_SIZE];
-    scanf("%s",buff);
-    if(strcmp(buff,"--file")){
-        char ch[50];
-        scanf("%[^\n]%*c",ch);
-        printf("Invalid command\n");
-        return;
-    }
-    char ch=getchar();
-    ch=getchar();
-    scanf("%[^\n]%*c",address);
-    int length=strlen(address);
-    if(ch=='"' && address[length-1]=='"'){
-        delete_quote_v1(address);
-    }
+void createfile(char address[]){
     make_dir(address);
     FILE * f;
     if(access(address,F_OK)==0){
@@ -391,16 +459,7 @@ void createfile(){
     }
 }
 
-void cat(){
-    char buff[MAX_SIZE],address[MAX_SIZE];
-    scanf("%s",buff);
-    if(strcmp(buff,"--file")){
-        char ch[50];
-        scanf("%[^\n]%*c",ch);
-        printf("Invalid command\n");
-        return;
-    }
-    input_file_address(address);
+void cat(char address[]){
     if(access(address,F_OK)!=0){
         printf("Error: This file does not exist\n");
     }
@@ -416,36 +475,7 @@ void cat(){
     }
 }
 
-void insertstr(){
-    int line_no,start_pos; //for position of string
-    char buff[MAX_SIZE]={0},address[MAX_SIZE]={0},string[MAX_SIZE]={0};
-    scanf("%s",buff);
-    if(strcmp(buff,"--file")){
-        char ch[50];
-        scanf("%[^\n]%*c",ch);
-        printf("Invalid command\n");
-        return;
-    }
-    input_file_address(address);
-    clear(buff);
-    scanf("%s",buff);
-    if(strcmp(buff,"--str")){
-        char ch[50];
-        scanf("%[^\n]%*c",ch);
-        printf("Invalid command\n");
-        return;
-    }
-    input_string(string);
-    clear(buff);
-    scanf("%s",buff);
-    if(strcmp(buff,"--pos")){
-        char ch[50];
-        scanf("%[^\n]%*c",ch);
-        printf("Invalid command\n");
-        return;
-    }
-    char ch;
-    scanf("%d%c%d",&line_no,&ch,&start_pos);
+void insertstr(char address[],char string[],int line_no,int start_pos){
     if(access(address,F_OK)!=0){
         printf("Error: This file does not exist\n");
         return;
@@ -1146,4 +1176,67 @@ void text_comparator(){
             printf("%s\n",buff[i]);
         }
     }
+}
+
+void tree(int depth,int depth_buff,char* directory){
+    if(depth_buff==-2){
+        return;
+    }
+    struct dirent *de;
+    DIR *dir=opendir(directory);
+    if(dir==NULL){
+        char buff[MAX_SIZE];
+        file_name_3(directory,buff);
+        printf("|");
+        for(int i=0;i<depth-depth_buff-1;i++){
+            printf("  ");
+        }
+        if(depth-1==depth_buff)
+            printf("____%s\n",buff);
+        else
+            printf("|____%s\n",buff);
+        printf("|");
+        for(int i=0;i<depth-depth_buff-1;i++){
+            printf("  ");
+        }
+        if(depth-1!=depth_buff)
+            printf("|\n");
+        else{
+            printf("\n");
+        }
+        return;
+    }
+
+    char buff[MAX_SIZE];
+    file_name_3(directory,buff);
+    if(strcmp(buff,"root")){
+        printf("|");
+        for(int i=0;i<depth-depth_buff-1;i++){
+            printf("  ");
+        }
+        if(depth-1==depth_buff)
+            printf("____%s\n",buff);
+        else
+            printf("|____%s\n",buff);
+        printf("|");
+        for(int i=0;i<depth-depth_buff-1;i++){
+            printf("  ");
+        }
+        if(depth-1!=depth_buff)
+            printf("|\n");
+        else{
+            printf("\n");
+        }
+    }
+    char *dir_buff=(char *)malloc(sizeof(char)*MAX_SIZE);
+    strcpy(dir_buff,directory);
+    while((de=readdir(dir))!=NULL){
+        if(*(de->d_name)!='.'){
+            strcat(dir_buff,"/");
+            strcat(dir_buff,de->d_name);
+            tree(depth,depth_buff-1,dir_buff);
+        }
+        strcpy(dir_buff,directory);
+    }
+    closedir(dir);
 }
