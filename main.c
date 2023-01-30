@@ -23,7 +23,8 @@ void find();
 void grep();
 void undo();
 void text_comparator();
-void tree(int depth,int depth_buff,char *directory);
+void tree(int depth,int depth_buff,char *directory,int a);
+void auto_indent(char address[]);
 
 //Auxiliary functions
 void clear(char ch[]);
@@ -38,7 +39,7 @@ int count_words(char *string,char *p);
 void check_grep_options(int mark[],char string[]);
 void input_file_address_v2(char address[]);
 void file_name(char address[],char buffer[]);
-int is_dir(char *filename);
+void open_block(char *correct_form);
 
 int main(){
     char buff[MAX_SIZE],address[MAX_SIZE],string[MAX_SIZE];
@@ -143,10 +144,15 @@ int main(){
                 printf("Invalid depth\n");
                 continue;
             }
-            tree(depth,depth,directory);
+            tree(depth,depth,directory,1);
+        }
+        else if(!strcmp(command,"auto-indent")){
+            clear(address);
+            input_file_address(address);
+            auto_indent(address);
         }
         else{
-            char junk[100]; //to avoid repeating print invalid command
+            char junk[MAX_SIZE]; //to avoid repeating print invalid command
             scanf("%[^\n]%*c",junk);
             printf("Invalid command\n");
         }
@@ -446,6 +452,26 @@ int count_words(char *string,char *p){
     return count+1;
 }
 
+void open_block(char *ptr){
+    char *buff=(char *)malloc(sizeof(char)*MAX_SIZE);
+    clear(buff);
+    if(*(ptr-1)!=' '){
+        for(int i=strlen(ptr);i>0;i--){
+            *(ptr+i)=*(ptr+i-1);
+        }
+        *ptr=' ';
+        return;
+    }
+    int length=strlen(ptr);
+    while(*(ptr-2)==' '){
+        for(int i=-1;i<length;i++){
+            *(ptr+i)=*(ptr+i+1);
+        }
+        ptr--;
+    }
+
+}
+
 void createfile(char address[]){
     make_dir(address);
     FILE * f;
@@ -602,7 +628,7 @@ void copystr(){
     int r_num; //number of characters that we want to copy
     int countChar=0; //for counting characters
     int buffer=0;
-    char buff[100]={0},address[100]={0};
+    char buff[MAX_SIZE]={0},address[MAX_SIZE]={0};
     scanf("%s",buff);
     if(strcmp(buff,"--file")){
         char ch[50];
@@ -1178,7 +1204,7 @@ void text_comparator(){
     }
 }
 
-void tree(int depth,int depth_buff,char* directory){
+void tree(int depth,int depth_buff,char* directory,int a){
     if(depth_buff==-2){
         return;
     }
@@ -1195,11 +1221,12 @@ void tree(int depth,int depth_buff,char* directory){
             printf("____%s\n",buff);
         else
             printf("|____%s\n",buff);
-        printf("|");
+        if(depth-1!=depth_buff || a!=0)
+            printf("|");
         for(int i=0;i<depth-depth_buff-1;i++){
             printf("  ");
         }
-        if(depth-1!=depth_buff)
+        if(depth-1!=depth_buff && a==1)
             printf("|\n");
         else{
             printf("\n");
@@ -1218,11 +1245,12 @@ void tree(int depth,int depth_buff,char* directory){
             printf("____%s\n",buff);
         else
             printf("|____%s\n",buff);
-        printf("|");
+        if(depth-1!=depth_buff || a!=0)
+            printf("|");
         for(int i=0;i<depth-depth_buff-1;i++){
             printf("  ");
         }
-        if(depth-1!=depth_buff)
+        if(depth-1!=depth_buff && a==1)
             printf("|\n");
         else{
             printf("\n");
@@ -1230,13 +1258,116 @@ void tree(int depth,int depth_buff,char* directory){
     }
     char *dir_buff=(char *)malloc(sizeof(char)*MAX_SIZE);
     strcpy(dir_buff,directory);
-    while((de=readdir(dir))!=NULL){
+    int flag=1;
+    de=readdir(dir);
+    if(de==NULL)
+        flag=0;
+    while(flag){
+        int f=0;
         if(*(de->d_name)!='.'){
             strcat(dir_buff,"/");
             strcat(dir_buff,de->d_name);
-            tree(depth,depth_buff-1,dir_buff);
+            f=1;
+        }
+        if((de=readdir(dir))==NULL){
+            flag=0;
+        }
+        if(f==1){
+            tree(depth,depth_buff-1,dir_buff,flag);
         }
         strcpy(dir_buff,directory);
     }
     closedir(dir);
+}
+
+void auto_indent(char address[]){
+    char *temp=(char *)malloc(sizeof(char)*MAX_SIZE);
+    char *correct_form=(char *)malloc(sizeof(char)*MAX_SIZE);
+    int count=0;
+    clear(temp);
+    if(access(address,F_OK)!=0){
+        printf("Error: This file does not exist\n");
+        return;
+    }
+    FILE *file=fopen(address,"r");
+    fgets(temp,MAX_SIZE,file);
+    clear(correct_form);
+    int depth=0;
+    int flag=0,flag1=0;
+    for(int i=0;i<strlen(temp);i++){
+        if(temp[i]!=' ' && temp[i]!='}' && flag1==0){
+            count=strlen(correct_form);
+            correct_form[count]=temp[i];
+            flag=0;
+        }
+        if(temp[i]!=' ' && temp[i]!='}' && flag1==1){
+            strcat(correct_form,"\n");
+            for(int i=0;i<depth*4;i++){
+                strcat(correct_form," ");
+            }
+            count=strlen(correct_form);
+            correct_form[count]=temp[i];
+            flag=0;
+            flag1=0;
+        }
+        if(temp[i]==' ' && flag==0){
+            count=strlen(correct_form);
+            correct_form[count]=temp[i];
+        }
+        if(temp[i]=='{' && i==0){
+            depth++;
+            count=strlen(correct_form);
+            correct_form[count]='\n';
+            for(int i=0;i<depth*4;i++){
+                strcat(correct_form," ");
+            }
+            flag=1;
+        }
+        else if(temp[i]=='{' && correct_form[count-1-4*depth]=='\n'){
+            depth++;
+            count=strlen(correct_form);
+            correct_form[count]='\n';
+            for(int i=0;i<depth*4;i++){
+                strcat(correct_form," ");
+            }
+            flag=1;
+        }
+        else if(temp[i]=='{'){
+            depth++;
+            open_block(correct_form + count);
+            count=strlen(correct_form);
+            correct_form[count]='\n';
+            for(int i=0;i<depth*4;i++){
+                strcat(correct_form," ");
+            }
+            flag=1;
+        }
+        else if(temp[i]=='}'){
+            flag=1;
+            flag1=1;
+            depth--;
+            char *ptr=correct_form+strlen(correct_form)-1;
+            while(*(ptr)==' '){
+                *ptr=0;
+                ptr--;
+            }
+            count=strlen(correct_form);
+            if(correct_form[count-1]!='\n')
+                correct_form[count]='\n';
+            for(int i=0;i<depth*4;i++){
+                strcat(correct_form," ");
+            }
+            count=strlen(correct_form);
+            correct_form[count]='}';
+            /*strcat(correct_form,"\n");
+            for(int i=0;i<depth*4;i++){
+                strcat(correct_form," ");
+            }*/
+        }
+    }
+    fclose(file);
+    file=fopen(address,"w");
+    fprintf(file,"%s",correct_form);
+    fclose(file);
+    printf("%s\n",correct_form);
 }
