@@ -6,24 +6,25 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#define MAX_SIZE 1000
+#define MAX_SIZE 10000
 
 char command[MAX_SIZE];
 char clipboard[MAX_SIZE];
+int arm_activate=0;
 
 //Main commands
 void createfile(char address[]);
-void cat(char address[]);
+void cat(char address[],char arm_string[]);
 void insertstr(char address[],char string[],int line_no,int start_pos);
 void removestr(char address[],char string[],int line_no,int start_pos,int r_num,char buff[]);
 void copystr();
 void cutstr();
 void pastestr();
-void find(char address[],char string[],int *options,int n);
-void grep();
-void undo();
-void text_comparator();
-void tree(int depth,int depth_buff,char *directory,int a);
+void find(char address[],char string[],int *options,int n,char arm_string[]);
+void grep(char buffer[][100],char string[],int mark[],int n,char arm_string[]);
+void undo(char address[]);
+void text_comparator(char address1[],char address2[],char arm_string[]);
+void tree(int depth,int depth_buff,char *directory,int a,char arm_string[]);
 void auto_indent(char address[]);
 void replace(char address[],char str1[],char str2[],int *options,int n);
 
@@ -35,7 +36,7 @@ void input_file_address(char address[]);
 int  check_address(char address[]);
 void input_string(char string[]);
 int check_correctness(char * p,int length,char temp[]);//for checking weather the absolute word is found or not
-void check_find_options(int *options,int *n);
+int check_find_options(int *options,int *n);
 int convert_stiring(char string[]);
 int count_words(char *string,char *p);
 void check_grep_options(int mark[],char string[]);
@@ -43,11 +44,20 @@ void input_file_address_v2(char address[]);
 void file_name(char address[],char buffer[]);
 void open_block(char *correct_form);
 int check_index(int all[],int num,int count,int len);
+void arman_input(char command[],char arm_string[]);
 
 int main(){
-    char buff[MAX_SIZE],address[MAX_SIZE],string[MAX_SIZE],str1[MAX_SIZE],str2[MAX_SIZE];
+    char buff[MAX_SIZE],address[MAX_SIZE],string[MAX_SIZE],str1[MAX_SIZE],str2[MAX_SIZE],arm[10];
+    char arm_string[MAX_SIZE];
+    char ch;
+    char address1[MAX_SIZE]={0},address2[MAX_SIZE]={0};
     int flag=1;
     while(flag){
+        clear(arm);
+        clear(arm_string);
+        clear(address1);
+        clear(address2);
+        arm_activate=0;
         scanf("%s",command);
         if(!strcmp(command,"exit")){
             printf("Good Luck!");
@@ -77,7 +87,16 @@ int main(){
                 continue;
             }
             input_file_address(address);
-            cat(address);
+            ch=getchar();
+            arm_activate=(ch!='\n');
+            cat(address,arm_string);
+            if(ch!='\n'){
+                scanf("%s",arm);
+                clear(command);
+                scanf("%s",command);
+                if(arm_activate)
+                    arman_input(command,arm_string);
+            }
         }
         else if(!strcmp(command,"insertstr")){
             clear(buff);
@@ -175,7 +194,6 @@ int main(){
                 continue;
             }
             input_string(string);
-            convert_stiring(string);
             clear(buff);
             scanf("%s",buff);
             if(strcmp(buff,"--file")){
@@ -185,8 +203,14 @@ int main(){
                 continue;
             }
             input_file_address(address);
-            check_find_options(options,ptr);
-            find(address,string,options,n);
+            arm_activate=check_find_options(options,ptr);
+            find(address,string,options,n,arm_string);
+            if(arm_activate){
+                arm_activate=1;
+                clear(command);
+                scanf("%s",command);
+                arman_input(command,arm_string);
+            }
         }
         else if(!strcmp(command,"replace")){
             clear(buff);
@@ -230,13 +254,70 @@ int main(){
             replace(address,str1,str2,options,n);
         }
         else if(!strcmp(command,"grep")){
-            grep();
+            clear(string);
+            char buffer[100][100];
+            int n=0,t=0;
+            ch=0;
+            int mark[2]={0,0};
+            check_grep_options(mark,string);
+            ch=getchar();
+            while(ch!='\n'){
+                input_file_address_v2(buffer[n]);
+                if(!strcmp(buffer[n],"D")){
+                    t=1;
+                    break;
+                }
+                else{
+                    n++;
+                }
+                ch=getchar();
+            }
+            arm_activate=(t==1);
+            grep(buffer,string,mark,n,arm_string);
+            if(t==1){
+                clear(command);
+                scanf("%s",command);
+                if(arm_activate)
+                    arman_input(command,arm_string);
+            }
         }
         else if(!strcmp(command,"undo")){
-            undo();
+            clear(buff);
+            clear(address);
+            scanf("%s",buff);
+            char ch=getchar();
+            ch=getchar();
+            if(ch=='"'){
+                ch=0;
+                int count=0;
+                while(ch!='"'){
+                    ch=getchar();
+                    address[count]=ch;
+                    count++;
+                }
+            }
+            else{
+                scanf("%s",address);
+            }
+            int length=strlen(address);
+            if(ch=='"' && address[length-1]=='"'){
+                delete_quote_v1(address);
+            }
+            undo(address);
         }
         else if(!strcmp(command,"compare")){
-            text_comparator();
+            input_file_address(address1);
+            input_file_address(address2);
+            ch=getchar();
+            arm_activate=(ch!='\n');
+            text_comparator(address1,address2,arm_string);
+            if(ch!='\n'){
+                scanf("%s",arm);
+                clear(command);
+                scanf("%s",command);
+                if(arm_activate)
+                    arman_input(command,arm_string);
+            }
         }
         else if(!strcmp(command,"tree")){
             int depth;
@@ -248,7 +329,16 @@ int main(){
                 printf("Invalid depth\n");
                 continue;
             }
-            tree(depth,depth,directory,1);
+            ch=getchar();
+            arm_activate=(ch!='\n');
+            tree(depth,depth,directory,1,arm_string);
+            if(ch!='\n'){
+                scanf("%s",arm);
+                clear(command);
+                scanf("%s",command);
+                if(arm_activate)
+                    arman_input(command,arm_string);
+            }
         }
         else if(!strcmp(command,"auto-indent")){
             clear(address);
@@ -263,6 +353,71 @@ int main(){
         clear(command);
     }
     return 0;
+}
+
+void arman_input(char command[],char arm_string[]){
+    char buff[MAX_SIZE],address[MAX_SIZE];
+    if(!strcmp(command,"insertstr")){
+        clear(buff);
+        clear(address);
+        int line_no,start_pos; //for position of string
+        scanf("%s",buff);
+        if(strcmp(buff,"--file")){
+            char ch[50];
+            scanf("%[^\n]%*c",ch);
+            printf("Invalid command\n");
+            return;
+        }
+        input_file_address(address);
+        clear(buff);
+        scanf("%s",buff);
+        if(strcmp(buff,"--pos")){
+            char ch[50];
+            scanf("%[^\n]%*c",ch);
+            printf("Invalid command\n");
+            return;
+        }
+        char ch;
+        scanf("%d%c%d",&line_no,&ch,&start_pos);
+        insertstr(address,arm_string,line_no,start_pos);
+    }
+    if(!strcmp(command,"find")){
+        char a[MAX_SIZE];
+        clear(buff);
+        clear(address);
+        int n=1;
+        int *options=(int *)malloc(sizeof(int)*4),*ptr=&n; //just for checking this useless options
+        for(int i=0;i<4;i++){
+            *(options+i)=0;
+        }
+        scanf("%s",buff);
+        if(strcmp(buff,"--file")){
+            char ch[50];
+            scanf("%[^\n]%*c",ch);
+            printf("Invalid command\n");
+            return;
+        }
+        input_file_address(address);
+        check_find_options(options,ptr);
+        arm_activate=0;
+        find(address,arm_string,options,n,a);
+    }
+    if(!strcmp(command,"grep")){
+        char buffer[100][100];
+        char a[MAX_SIZE];
+        int n=0,t=0;
+        char ch;
+        int mark[2]={0,0};
+        check_grep_options(mark,a);
+        ch=getchar();
+        while(ch!='\n'){
+            input_file_address_v2(buffer[n]);
+            n++;
+            ch=getchar();
+        }
+        arm_activate=0;
+        grep(buffer,arm_string,mark,n,a);
+        }
 }
 
 void clear(char ch[]){
@@ -451,7 +606,7 @@ void input_string(char string[]){
 }
 
 int check_correctness(char *p,int length,char temp[]){
-    if(*(p+length)>=32 && *(p+length)<=47 || *(p+length)=='?' ||*(p+length)==EOF || *(p+length)=='\n'){
+    if(*(p+length)>=32 && *(p+length)<=47 || *(p+length)=='?' ||*(p+length)==EOF || *(p+length)=='\n' || *(p+length)==NULL){
         if(*(p-1)>=32 && *(p-1)<=47 || *(p-1)=='?' || p-temp==0){
             return 1;
         }
@@ -459,7 +614,7 @@ int check_correctness(char *p,int length,char temp[]){
     return 0;
 }
 
-void check_find_options(int *options,int *n){
+int check_find_options(int *options,int *n){
     char flag[MAX_SIZE]={0};
     char ch;
     ch=getchar();
@@ -478,6 +633,9 @@ void check_find_options(int *options,int *n){
         else if(!strcmp(flag,"-all")){
             *(options+3)=1;
         }
+        else if(!strcmp(flag,"=D")){
+            return 1;
+        }
         else{
             char ch[50];
             scanf("%[^\n]%*c",ch);
@@ -487,6 +645,7 @@ void check_find_options(int *options,int *n){
         clear(flag);
         ch=getchar();
     }
+    return 0;
 }
 
 void check_grep_options(int mark[],char string[]){
@@ -616,23 +775,32 @@ void createfile(char address[]){
     }
 }
 
-void cat(char address[]){
+void cat(char address[],char arm_string[]){
     if(!check_address(address)){
         printf("Invalid address\n");
+        arm_activate=0;
         return;
     }
     if(access(address,F_OK)!=0){
         printf("Error: This file does not exist\n");
+        arm_activate=0;
+        return;
     }
     else{
         FILE * f=fopen(address,"r");
-        char c="a";
+        char c=0;
+        int count=0;
         while(c!=EOF){
             c=getc(f);
-            if(c!=EOF)
-            printf("%c",c);
+            if(c!=EOF){
+                if(arm_activate==0)
+                    printf("%c",c);
+                arm_string[count]=c;
+                count++;
+            }
         }
-        printf("\n");
+        if(arm_activate==0)
+            printf("\n");
     }
 }
 
@@ -770,6 +938,11 @@ void copystr(){
     buffer=r_num;
     clear(buff);
     scanf("%s",buff);
+    if(!check_address(address)){
+        printf("Invalid address\n");
+        arm_activate=0;
+        return;
+    }
     if(access(address,F_OK)!=0){
         printf("Error: This file does not exist\n");
         return;
@@ -859,6 +1032,11 @@ void cutstr(){
     buffer=r_num;
     clear(buff);
     scanf("%s",buff);
+    if(!check_address(address)){
+        printf("Invalid address\n");
+        arm_activate=0;
+        return;
+    }
     if(access(address,F_OK)!=0){
         printf("Error: This file does not exist\n");
         return;
@@ -935,6 +1113,11 @@ void pastestr(){
     }
     char ch;
     scanf("%d%c%d",&line_no,&ch,&start_pos);
+    if(!check_address(address)){
+        printf("Invalid address\n");
+        arm_activate=0;
+        return;
+    }
     if(access(address,F_OK)!=0){
         printf("Error: This file does not exist\n");
         return;
@@ -973,15 +1156,18 @@ void pastestr(){
     printf("Success\n");
 }
 
-void find(char address[],char string[],int *options,int n){
+void find(char address[],char string[],int *options,int n,char arm_string[]){
     char temp[MAX_SIZE]={0};
+    convert_stiring(string);
     int flag=0; //for checking the existence of the string
     if(!check_address(address)){
         printf("Invalid address\n");
+        arm_activate=0;
         return;
     }
     if(access(address,F_OK)!=0){
         printf("Error: This file does not exist\n");
+        arm_activate=0;
         return;
     }
     FILE * file =fopen(address,"r");
@@ -1002,14 +1188,18 @@ void find(char address[],char string[],int *options,int n){
                 }
                 clear(temp);
             }
-            printf("This phrase was found %d times\n",count);
+            if(!arm_activate)
+                printf("This phrase was found %d times\n",count);
+            sprintf(arm_string,"This phrase was found %d times",count);
         }
         else{
             printf("You cannot use these options simultaneously\n");
+            arm_activate;
         }
     }
     else if(*(options+3) && *(options+1)){
         printf("You cannot use these options simultaneously\n");
+        arm_activate=0;
     }
     else if(*(options+3)){
         char *p;
@@ -1026,10 +1216,14 @@ void find(char address[],char string[],int *options,int n){
                         if(temp+i==p){
                             flag=1;
                             if(*(options+2)){
-                                printf("%d ",countWord+count_words(temp,p));
+                                if(!arm_activate)
+                                    printf("%d ",countWord+count_words(temp,p));
+                                sprintf(arm_string,"%d ",countWord+count_words(temp,p));
                             }
                             else{
-                                printf("%d ",countChar+p-temp);
+                                if(!arm_activate)
+                                    printf("%d ",countChar+p-temp);
+                                sprintf(arm_string,"%d ",countChar+p-temp);
                             }
                         }
                     }
@@ -1041,10 +1235,13 @@ void find(char address[],char string[],int *options,int n){
             clear(temp);
         }
         if(flag==0){
-            printf("%d\n",-1);
+            if(!arm_activate)
+                printf("%d\n",-1);
+            strcat(arm_string,"-1");
         }
         else{
-            printf("\n");
+            if(!arm_activate)
+                printf("\n");
         }
     }
     else{
@@ -1080,44 +1277,52 @@ void find(char address[],char string[],int *options,int n){
             clear(temp);
         }
         if(flag==0){
-            printf("%d\n",-1);
+            if(!arm_activate)
+                printf("%d\n",-1);
+            strcat(arm_string,"-1");
         }
         else if(*(options+2)){
-            printf("%d\n",countWord);
+            if(!arm_activate)
+                printf("%d\n",countWord);
+            sprintf(arm_string,"%d",countWord);
         }
         else{
-            printf("Found: index of the first Character is [%d]\n",countChar);
+            if(!arm_activate)
+                printf("Found: index of the first Character is [%d]\n",countChar);
+            sprintf(arm_string,"Found: index of the first Character is [%d]",countChar);
         }
     }
     fclose(file);
 }
 
-void grep(){
-    char buff1[MAX_SIZE][MAX_SIZE]={0},buff2[MAX_SIZE][MAX_SIZE]={0},address[MAX_SIZE]={0},string[MAX_SIZE]={0},temp[MAX_SIZE]={0};
-    int mark[2]={0,0};
-    check_grep_options(mark,string);
+void grep(char address[][100],char string[],int mark[],int n,char arm_string[]){
+    char buff1[100][100]={0},buff2[100][100]={0},temp[MAX_SIZE]={0};
+    char *a=(char *)malloc(sizeof(char)*MAX_SIZE);
     convert_stiring(string);
-    char ch=0;
-    ch=getchar();
     int count_lines=0;
     FILE *file;
     int flag1=0;
     int flag2=0;
     int count1=0;
     int count2=0;
-    while(ch!='\n'){
-        input_file_address_v2(address);
-        if(access(address,F_OK)!=0){
-            printf("Error: /%s does not exist\nplease input the file again\n",address);
+    for(int j=0;j<n;j++){
+        if(!check_address(address[j])){
+            printf("Invalid address\n");
+            arm_activate=0;
             return;
         }
-        file=fopen(address,"r");
+        if(access(address[j],F_OK)!=0){
+            printf("Error: /%s does not exist\nplease input the file again\n",address[j]);
+            arm_activate=0;
+            return;
+        }
+        file=fopen(address[j],"r");
         while(fgets(temp,MAX_SIZE,file)!=NULL){
             if(strstr(temp,string)!=NULL){
                 count_lines++;
                 if(mark[1]==1){
-                    for(int i=0;i<strlen(address);i++){
-                        buff1[count1][i]=address[i];
+                    for(int i=0;i<strlen(address[j]);i++){
+                        buff1[count1][i]=address[j][i];
                     }
                     count1++;
                     flag1=1;
@@ -1134,50 +1339,45 @@ void grep(){
                 }
             }
         }
-        clear(address);
-        ch=getchar();
     }
     fclose(file);
     if(mark[0]==1){
-        printf("%d\n",count_lines);
+        if(!arm_activate)
+            printf("%d\n",count_lines);
+        sprintf(a,"%d\n",count_lines);
+        strcat(arm_string,a);
     }
     else if(flag1==1){
         for(int i=0;i<count1;i++){
-            printf("%s\n",buff1[i]);
+            if(!arm_activate)
+                printf("%s\n",buff1[i]);
+            sprintf(a,"%s\n",buff1[i]);
+            strcat(arm_string,a);
         }
+
     }
     else if(flag2==1){
         for(int i=0;i<count2;i++){
-            printf("%s\n",buff2[i]);
+            if(!arm_activate)
+                printf("%s\n",buff2[i]);
+            sprintf(a,"%s\n",buff2[i]);
+            strcat(arm_string,a);
         }
     }
     else if(flag1==0 && flag2==0){
-        printf("This pattern does not exist in any file\n");
+        if(!arm_activate)
+            printf("This pattern does not exist in any file\n");
+        strcat(arm_string,"This pattern does not exist in any file\n");
     }
 
 }
 
-void undo(){
-    char buff[MAX_SIZE]={0},address[MAX_SIZE]={0},string[MAX_SIZE]={0},temp[MAX_SIZE]={0};
+void undo(char address[]){
+    char temp[MAX_SIZE]={0};
     char buffer[MAX_SIZE]={0};
-    scanf("%s",buff);
-    char ch=getchar();
-    ch=getchar();
-    if(ch=='"'){
-        ch=0;
-        int count=0;
-        while(ch!='"'){
-            ch=getchar();
-            address[count]=ch;
-            count++;
-        }
-    }
-    else{
-        scanf("%s",address);
-    }
-    int length=strlen(address);
-    if(ch=='"' && address[length-1]=='"'){
-        delete_quote_v1(address);
+    if(!check_address(address)){
+        printf("Invalid address\n");
+        return;
     }
     if(access(address,F_OK)!=0){
         printf("Error: This file does not exist\n");
@@ -1212,21 +1412,31 @@ void undo(){
     printf("Success\n");
 }
 
-void text_comparator(){
+void text_comparator(char address1[],char address2[],char arm_string[]){
+    char *a=(char *)malloc(sizeof(char)*MAX_SIZE);
     int count=0;
     int line_number=0;
     int flag1=1,flag2=1;
-    char address1[MAX_SIZE]={0},address2[MAX_SIZE]={0};
     char temp1[MAX_SIZE]={0},temp2[MAX_SIZE]={0};
-    char buff[MAX_SIZE][MAX_SIZE]={0};
-    input_file_address(address1);
-    input_file_address(address2);
+    char buff[100][100]={0};
+    if(!check_address(address1)){
+        printf("Invalid address\n");
+        arm_activate=0;
+        return;
+    }
+    if(!check_address(address2)){
+        printf("Invalid address\n");
+        arm_activate=0;
+        return;
+    }
     if(access(address1,F_OK)!=0){
         printf("Error: /%s does not exist\nplease input the file again\n",address1);
+        arm_activate=0;
         return;
     }
     if(access(address2,F_OK)!=0){
         printf("Error: /%s does not exist\nplease input the file again\n",address2);
+        arm_activate=0;
         return;
     }
     FILE *file1=fopen(address1,"r"),*file2=fopen(address2,"r");
@@ -1242,19 +1452,32 @@ void text_comparator(){
             break;
         }
         if(strcmp(temp1,temp2)){
-            printf("============ #%d ============\n",line_number);
+            if(!arm_activate)
+                printf("============ #%d ============\n",line_number);
+            sprintf(a,"============ #%d ============\n",line_number);
+            strcat(arm_string,a);
             for(int i=0;i<strlen(temp1);i++){
                 if(temp1[i]!='\n'){
-                    printf("%c",temp1[i]);
+                    if(!arm_activate)
+                        printf("%c",temp1[i]);
+                    sprintf(a,"%c",temp1[i]);
+                    strcat(arm_string,a);
                 }
             }
-            printf("\n");
+            if(!arm_activate)
+                printf("\n");
+            strcat(arm_string,"\n");
             for(int i=0;i<strlen(temp2);i++){
                 if(temp2[i]!='\n'){
-                    printf("%c",temp2[i]);
+                    if(!arm_activate)
+                        printf("%c",temp2[i]);
+                    sprintf(a,"%c",temp2[i]);
+                    strcat(arm_string,a);
                 }
             }
-            printf("\n");
+            if(!arm_activate)
+                printf("\n");
+            strcat(arm_string,"\n");
         }
     }
     if(flag1==0 && flag2==0){
@@ -1271,9 +1494,15 @@ void text_comparator(){
             count++;
             end_line++;
         }while(fgets(temp2,MAX_SIZE,file2)!=NULL);
-        printf(">>>>>>>>>>>> #%d - #%d >>>>>>>>>>>>\n",line_number,end_line-1);
+        if(!arm_activate)
+            printf(">>>>>>>>>>>> #%d - #%d >>>>>>>>>>>>\n",line_number,end_line-1);
+        sprintf(a,">>>>>>>>>>>> #%d - #%d >>>>>>>>>>>>\n",line_number,end_line-1);
+        strcat(arm_string,a);
         for(int i=0;i<count;i++){
-            printf("%s\n",buff[i]);
+            if(!arm_activate)
+                printf("%s\n",buff[i]);
+            sprintf(a,"%s\n",buff[i]);
+            strcat(arm_string,a);
         }
     }
     else{
@@ -1287,14 +1516,20 @@ void text_comparator(){
             count++;
             end_line++;
         }while(fgets(temp1,MAX_SIZE,file1)!=NULL);
-        printf("<<<<<<<<<<<< #%d - #%d <<<<<<<<<<<<\n",line_number,end_line-1);
+        if(!arm_activate)
+            printf("<<<<<<<<<<<< #%d - #%d <<<<<<<<<<<<\n",line_number,end_line-1);
+        sprintf(a,"<<<<<<<<<<<< #%d - #%d <<<<<<<<<<<<\n",line_number,end_line-1);
+        strcat(arm_string,a);
         for(int i=0;i<count;i++){
-            printf("%s\n",buff[i]);
+            if(!arm_activate)
+                printf("%s\n",buff[i]);
+            sprintf(a,"%s\n",buff[i]);
+            strcat(arm_string,a);
         }
     }
 }
 
-void tree(int depth,int depth_buff,char* directory,int a){
+void tree(int depth,int depth_buff,char* directory,int a,char arm_string[]){
     if(depth_buff==-2){
         return;
     }
@@ -1303,23 +1538,47 @@ void tree(int depth,int depth_buff,char* directory,int a){
     if(dir==NULL){
         char buff[MAX_SIZE];
         file_name_3(directory,buff);
-        printf("|");
-        for(int i=0;i<depth-depth_buff-1;i++){
-            printf("  ");
-        }
-        if(depth-1==depth_buff)
-            printf("____%s\n",buff);
-        else
-            printf("|____%s\n",buff);
-        if(depth-1!=depth_buff || a!=0)
+        if(!arm_activate)
             printf("|");
+        strcat(arm_string,"|");
         for(int i=0;i<depth-depth_buff-1;i++){
-            printf("  ");
+            if(!arm_activate)
+                printf("  ");
+            strcat(arm_string,"  ");
         }
-        if(depth-1!=depth_buff && a==1)
-            printf("|\n");
+        if(depth-1==depth_buff){
+            if(!arm_activate)
+                printf("____%s\n",buff);
+            strcat(arm_string,"____");
+            strcat(arm_string,buff);
+            strcat(arm_string,"\n");
+        }
         else{
-            printf("\n");
+            if(!arm_activate)
+                printf("|____%s\n",buff);
+            strcat(arm_string,"|____");
+            strcat(arm_string,buff);
+            strcat(arm_string,"\n");
+        }
+        if(depth-1!=depth_buff || a!=0){
+            if(!arm_activate)
+                printf("|");
+            strcat(arm_string,"|");
+        }
+        for(int i=0;i<depth-depth_buff-1;i++){
+            if(!arm_activate)
+                printf("  ");
+            strcat(arm_string,"  ");
+        }
+        if(depth-1!=depth_buff && a==1){
+            if(!arm_activate)
+                printf("|\n");
+            strcat(arm_string,"|\n");
+        }
+        else{
+            if(!arm_activate)
+                printf("\n");
+            strcat(arm_string,"\n");
         }
         return;
     }
@@ -1327,23 +1586,47 @@ void tree(int depth,int depth_buff,char* directory,int a){
     char buff[MAX_SIZE];
     file_name_3(directory,buff);
     if(strcmp(buff,"root")){
-        printf("|");
-        for(int i=0;i<depth-depth_buff-1;i++){
-            printf("  ");
-        }
-        if(depth-1==depth_buff)
-            printf("____%s\n",buff);
-        else
-            printf("|____%s\n",buff);
-        if(depth-1!=depth_buff || a!=0)
+        if(!arm_activate)
             printf("|");
+        strcat(arm_string,"|");
         for(int i=0;i<depth-depth_buff-1;i++){
-            printf("  ");
+            if(!arm_activate)
+                printf("  ");
+            strcat(arm_string,"  ");
         }
-        if(depth-1!=depth_buff && a==1)
-            printf("|\n");
+        if(depth-1==depth_buff){
+            if(!arm_activate)
+                printf("____%s\n",buff);
+            strcat(arm_string,"____");
+            strcat(arm_string,buff);
+            strcat(arm_string,"\n");
+        }
         else{
-            printf("\n");
+            if(!arm_activate)
+                printf("|____%s\n",buff);
+            strcat(arm_string,"|____");
+            strcat(arm_string,buff);
+            strcat(arm_string,"\n");
+        }
+        if(depth-1!=depth_buff || a!=0){
+            if(!arm_activate)
+                printf("|");
+            strcat(arm_string,"|");
+        }
+        for(int i=0;i<depth-depth_buff-1;i++){
+            if(!arm_activate)
+                printf("  ");
+            strcat(arm_string,"  ");
+        }
+        if(depth-1!=depth_buff && a==1){
+            if(!arm_activate)
+                printf("|\n");
+            strcat(arm_string,"|\n");
+        }
+        else{
+            if(!arm_activate)
+                printf("\n");
+            strcat(arm_string,"\n");
         }
     }
     char *dir_buff=(char *)malloc(sizeof(char)*MAX_SIZE);
@@ -1363,7 +1646,7 @@ void tree(int depth,int depth_buff,char* directory,int a){
             flag=0;
         }
         if(f==1){
-            tree(depth,depth_buff-1,dir_buff,flag);
+            tree(depth,depth_buff-1,dir_buff,flag,arm_string);
         }
         strcpy(dir_buff,directory);
     }
@@ -1375,6 +1658,11 @@ void auto_indent(char address[]){
     char *correct_form=(char *)malloc(sizeof(char)*MAX_SIZE);
     int count=0;
     clear(temp);
+    if(!check_address(address)){
+        printf("Invalid address\n");
+        arm_activate=0;
+        return;
+    }
     if(access(address,F_OK)!=0){
         printf("Error: This file does not exist\n");
         return;
@@ -1460,6 +1748,8 @@ void auto_indent(char address[]){
 void replace(char address[],char str1[],char str2[],int *options,int n){
     char temp[MAX_SIZE]={0};
     int flag=0;
+    convert_stiring(str1);
+    convert_stiring(str2);
     if(!check_address(address)){
         printf("Invalid address\n");
         return;
@@ -1470,7 +1760,7 @@ void replace(char address[],char str1[],char str2[],int *options,int n){
     }
     FILE * file =fopen(address,"r");
     FILE * file_buff=fopen("file_buff.txt","w");
-    if(*(options+3)){
+    if(*(options+3) && !*(options+1)){
         int all[MAX_SIZE]={0};
         int count=0;
         char *p;
@@ -1515,6 +1805,11 @@ void replace(char address[],char str1[],char str2[],int *options,int n){
                 number++;
             }
         }
+    }
+    else if(*(options+3) && *(options+1)){
+        printf("You cannot use these options simultaneously\n");
+        arm_activate=0;
+        return;
     }
     else{
         char *p;
@@ -1578,3 +1873,4 @@ void replace(char address[],char str1[],char str2[],int *options,int n){
     fclose(file_buff);
     printf("Success\n");
 }
+
