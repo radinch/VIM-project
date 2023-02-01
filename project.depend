@@ -1,7 +1,0 @@
-# depslib dependency file v1.0
-1674500026 source:c:\users\ideapad 5\desktop\project\main.c
-	<stdio.h>
-	<stdlib.h>
-	<string.h>
-	<direct.h>
-
