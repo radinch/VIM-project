@@ -11,7 +11,7 @@
 char command[MAX_SIZE];
 char clipboard[MAX_SIZE];
 int arm_activate=0;
-
+char *left=0,*right=0;
 //Main commands
 void createfile(char address[]);
 void cat(char address[],char arm_string[]);
@@ -45,6 +45,7 @@ void file_name(char address[],char buffer[]);
 void open_block(char *correct_form);
 int check_index(int all[],int num,int count,int len);
 void arman_input(char command[],char arm_string[]);
+void findWildcard(char string[]);
 
 int main(){
     char buff[MAX_SIZE],address[MAX_SIZE],string[MAX_SIZE],str1[MAX_SIZE],str2[MAX_SIZE],arm[10];
@@ -682,7 +683,7 @@ int convert_stiring(char string[]){
     int count=0;
     int flag=0;
     for(int i=0;i<strlen(string);i++){
-        if(string[i]!='\\' && string[i]!='n' && string[i]!='"'){
+        if(string[i]!='\\' && string[i]!='n' && string[i]!='"' && string[i]!='*'){
             buff[count]=string[i];
             count++;
         }
@@ -760,6 +761,25 @@ int check_index(int all[],int num,int count,int len){
         }
     }
     return 1;
+}
+
+void findWildcard(char string[]){
+    for(int i=0;i<strlen(string);i++){
+        if(string[i]=='*' && i==0){
+            right=strtok(string,"*");
+        }
+        else if(string[i]=='*' && string[i-1]==' '){
+            left=strtok(string,"*");
+            right=strtok(NULL,"*");
+        }
+        else if(string[i]=='*' && i==strlen(string)-1){
+            left=strtok(string,"*");
+        }
+        else if(string[i]=='*' && string[i+1]==' '){
+            left=strtok(string,"*");
+            right=strtok(NULL,"*");
+        }
+    }
 }
 
 void createfile(char address[]){
@@ -1158,7 +1178,7 @@ void pastestr(){
 
 void find(char address[],char string[],int *options,int n,char arm_string[]){
     char temp[MAX_SIZE]={0};
-    convert_stiring(string);
+    int wildcardActivate=convert_stiring(string);
     int flag=0; //for checking the existence of the string
     if(!check_address(address)){
         printf("Invalid address\n");
@@ -1173,20 +1193,110 @@ void find(char address[],char string[],int *options,int n,char arm_string[]){
     FILE * file =fopen(address,"r");
     if(*options){
         if(*(options+1)==0 && *(options+2)==0 && *(options+3)==0){
-            char *p;
+            char *p,*p1,*p2;
+            int countChar=0;
+            int countWord=0;
             int count=0;
-            while(fgets(temp,MAX_SIZE,file)!=NULL){
-                for(int i=0;i<strlen(temp);i++){
-                    if(strstr(temp+i,string)!=NULL){
-                        char *p=strstr(temp+i,string);
-                        int length=strlen(string);
-                        if(check_correctness(p,length,temp)){
-                            if(temp+i==p)
-                                count++;
+            int a[100]={0},b[100]={0};
+            int c[100]={0},d[100]={0};
+            int count1=0,count2=0;
+            if(!wildcardActivate){
+                while(fgets(temp,MAX_SIZE,file)!=NULL){
+                    for(int i=0;i<strlen(temp);i++){
+                        if(strstr(temp+i,string)!=NULL){
+                            char *p=strstr(temp+i,string);
+                            int length=strlen(string);
+                            if(check_correctness(p,length,temp)){
+                                if(temp+i==p)
+                                    count++;
+                            }
                         }
                     }
+                    clear(temp);
                 }
-                clear(temp);
+            }
+            else{
+                findWildcard(string);
+                while(fgets(temp,MAX_SIZE,file)!=NULL){
+                    p=temp+strlen(temp)-1;
+                    for(int i=0;i<strlen(temp);i++){
+                        if(right==NULL){
+                            if(strstr(temp+i,left)!=NULL){
+                                if(temp+i==p)
+                                    count++;
+                            }
+                        }
+                        else if(left==NULL){
+                            if(strstr(temp+i,right)!=NULL){
+                                if(temp+i==p)
+                                    count++;
+                            }
+                        }
+                        else{
+                            int l=strlen(left),r=strlen(right);
+                            if(*(left+l-1)==' '){
+                                if(strstr(temp+i,left)!=NULL){
+                                    p1=strstr(temp+i,left);
+                                    int length=strlen(left);
+                                    if(1){
+                                        if(temp+i==p1){
+                                            a[count1]=countChar+p1-temp;
+                                            count1++;
+                                        }
+                                    }
+                                }
+                                if(strstr(temp+i,right)!=NULL){
+                                    p2=strstr(temp+i,right);
+                                    while(p2!=temp && *(p2-1)!=' '){
+                                        p2--;
+                                    }
+                                    if(temp+i==p2){
+                                        b[count2]=countChar+p2-temp;
+                                        count2++;
+                                    }
+                                }
+                            }
+                            else{
+                                if(strstr(temp+i,right)!=NULL){
+                                    p1=strstr(temp+i,right);
+                                    int length=strlen(right);
+                                    if(1){
+                                        while(p1!=temp && *(p1-1)!=' '){
+                                            p1--;
+                                        }
+                                        if(temp+i==p1){
+                                            a[count1]=countChar+p1-temp;
+                                            count1++;
+                                        }
+                                    }
+                                }
+                                if(strstr(temp+i,left)!=NULL){
+                                    p2=strstr(temp+i,left);
+                                    if(temp+i==p2){
+                                        b[count2]=countChar+p2-temp;
+                                        count2++;
+                                    }
+                                }
+                            }
+                            for(int j=0;j<count1;j++){
+                                for(int k=0;k<count2;k++){
+                                    if(a[j]==b[k]){
+                                        count++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if(flag==1){
+                        break;
+                    }
+                    countChar+=strlen(temp);
+                    p=temp+strlen(temp)-1;
+                    p1=temp+strlen(temp)-1;
+                    p2=temp+strlen(temp)-1;
+                    countWord+=count_words(temp,p);
+                    clear(temp);
+                }
             }
             if(!arm_activate)
                 printf("This phrase was found %d times\n",count);
@@ -1245,36 +1355,135 @@ void find(char address[],char string[],int *options,int n,char arm_string[]){
         }
     }
     else{
-        char *p;
+        char *p,*p1,*p2;
         int countChar=0;
         int countWord=0;
         int count=0;
-        while(fgets(temp,MAX_SIZE,file)!=NULL){
-            p=temp+strlen(temp)-1;
-            for(int i=0;i<strlen(temp);i++){
-                if(strstr(temp+i,string)!=NULL){
-                    p=strstr(temp+i,string);
-                    int length=strlen(string);
-                    if(check_correctness(p,length,temp)){
-                        if(temp+i==p){
-                            count++;
+        int a[100]={0},b[100]={0};
+        int c[100]={0},d[100]={0};
+        int count1=0,count2=0;
+        if(!wildcardActivate){
+            while(fgets(temp,MAX_SIZE,file)!=NULL){
+                p=temp+strlen(temp)-1;
+                for(int i=0;i<strlen(temp);i++){
+                    if(strstr(temp+i,string)!=NULL){
+                        p=strstr(temp+i,string);
+                        int length=strlen(string);
+                        if(check_correctness(p,length,temp)){
+                            if(temp+i==p){
+                                count++;
+                            }
+                            if(count==n){
+                                countChar+=p-temp;
+                                countWord+=count_words(temp,p);
+                                flag=1;
+                                break;
+                            }
                         }
-                        if(count==n){
+                    }
+                }
+                if(flag==1){
+                    break;
+                }
+                countChar+=strlen(temp);
+                p=temp+strlen(temp)-1;
+                countWord+=count_words(temp,p);
+                clear(temp);
+            }
+        }
+        else{
+            findWildcard(string);
+            while(fgets(temp,MAX_SIZE,file)!=NULL){
+                p=temp+strlen(temp)-1;
+                for(int i=0;i<strlen(temp);i++){
+                    if(right==NULL){
+                        if(strstr(temp+i,left)!=NULL){
+                            p=strstr(temp+i,left);
                             countChar+=p-temp;
                             countWord+=count_words(temp,p);
                             flag=1;
                             break;
                         }
                     }
+                    else if(left==NULL){
+                        if(strstr(temp+i,right)!=NULL){
+                            p=strstr(temp+i,right);
+                            while(p!=temp && *(p-1)!=' '){
+                                p--;
+                            }
+                            countChar+=p-temp;
+                            countWord+=count_words(temp,p);
+                            flag=1;
+                            break;
+                        }
+                    }
+                    else{
+                        int l=strlen(left),r=strlen(right);
+                        if(*(left+l-1)==' '){
+                            if(strstr(temp+i,left)!=NULL){
+                                p1=strstr(temp+i,left);
+                                int length=strlen(left);
+                                if(1){
+                                    a[count1]=countChar+p1-temp;
+                                    c[count1]=countWord+count_words(temp,p1);
+                                    count1++;
+                                }
+                            }
+                            if(strstr(temp+i,right)!=NULL){
+                                p2=strstr(temp+i,right);
+                                while(p2!=temp && *(p2-1)!=' '){
+                                    p2--;
+                                }
+                                b[count2]=countChar+p2-temp-strlen(left);
+                                d[count2]=countWord+count_words(temp,p2)-1;
+                                count2++;
+                            }
+                        }
+                        else{
+                            if(strstr(temp+i,right)!=NULL){
+                                p1=strstr(temp+i,right);
+                                int length=strlen(right);
+                                if(1){
+                                    while(p1!=temp && *(p1-1)!=' '){
+                                        p1--;
+                                    }
+                                    a[count1]=countChar+p1-temp;
+                                    c[count1]=countWord+count_words(temp,p1);
+                                    count1++;
+                                }
+                            }
+                            if(strstr(temp+i,left)!=NULL){
+                                p2=strstr(temp+i,left);
+                                b[count2]=countChar+p2-temp;
+                                d[count2]=countWord+count_words(temp,p2);
+                                count2++;
+                            }
+                        }
+                        for(int j=0;j<count1;j++){
+                            for(int k=0;k<count2;k++){
+                                if(a[j]==b[k]){
+                                    countChar=a[j];
+                                    countWord=c[j];
+                                    flag=1;
+                                    break;
+                                }
+                            }
+                            if(flag==1){
+                                break;
+                            }
+                        }
+                    }
                 }
+                if(flag==1){
+                    break;
+                }
+                countChar+=strlen(temp);
+                p=temp+strlen(temp)-1;
+                p1=temp+strlen(temp)-1;
+                p2=temp+strlen(temp)-1;
+                countWord+=count_words(temp,p);
+                clear(temp);
             }
-            if(flag==1){
-                break;
-            }
-            countChar+=strlen(temp);
-            p=temp+strlen(temp)-1;
-            countWord+=count_words(temp,p);
-            clear(temp);
         }
         if(flag==0){
             if(!arm_activate)
