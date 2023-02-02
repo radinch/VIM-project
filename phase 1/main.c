@@ -606,12 +606,12 @@ void input_string(char string[]){
 }
 
 int check_correctness(char *p,int length,char temp[]){
-    if(*(p+length)>=32 && *(p+length)<=47 || *(p+length)=='?' ||*(p+length)==EOF || *(p+length)=='\n' || *(p+length)==NULL){
+    /*if(*(p+length)>=32 && *(p+length)<=47 || *(p+length)=='?' ||*(p+length)==EOF || *(p+length)=='\n' || *(p+length)==NULL){
         if(*(p-1)>=32 && *(p-1)<=47 || *(p-1)=='?' || p-temp==0){
             return 1;
         }
-    }
-    return 0;
+    }*/
+    return 1;
 }
 
 int check_find_options(int *options,int *n){
