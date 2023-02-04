@@ -1178,6 +1178,7 @@ void pastestr(){
 
 void find(char address[],char string[],int *options,int n,char arm_string[]){
     char temp[MAX_SIZE]={0};
+    char m[MAX_SIZE]={0};
     int wildcardActivate=convert_stiring(string);
     int flag=0; //for checking the existence of the string
     if(!check_address(address)){
@@ -1328,12 +1329,15 @@ void find(char address[],char string[],int *options,int n,char arm_string[]){
                             if(*(options+2)){
                                 if(!arm_activate)
                                     printf("%d ",countWord+count_words(temp,p));
-                                sprintf(arm_string,"%d ",countWord+count_words(temp,p));
+                                sprintf(m,"%d ",countWord+count_words(temp,p));
+                                strcat(arm_string,m);
                             }
                             else{
                                 if(!arm_activate)
                                     printf("%d ",countChar+p-temp);
-                                sprintf(arm_string,"%d ",countChar+p-temp);
+                                sprintf(m,"%d ",countChar+p-temp);
+                                strcat(arm_string,m);
+
                             }
                         }
                     }

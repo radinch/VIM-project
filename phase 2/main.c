@@ -20,6 +20,15 @@ void windows(char name[]);
 void navigation(char ch);
 void save(char name[]);
 void open_file(char name[],char buffer[]);
+void new_find(char tmp[],char buffer[]);
+int check_loc(int n,int find_loc[],int char_loc,int len){
+    for(int i=0;i<n;i++){
+        if(char_loc>=find_loc[i] && char_loc<find_loc[i]+len){
+            return 1;
+        }
+    }
+    return 0;
+}
 
 int main()
 {
@@ -43,10 +52,12 @@ int main()
     char left[MAX_SIZE];
     char right[MAX_SIZE];
     char name[MAX_SIZE];
+    char tmp[MAX_SIZE];
     while(termination){
         refresh();
         char c=0;
         int flag=0;
+        int flag1=0;
         init_pair(4, COLOR_WHITE, COLOR_BLACK);
         attron(COLOR_PAIR(4) | A_BOLD);
         win4=newwin(1,200,29,0);
@@ -171,6 +182,15 @@ int main()
                     strcpy(name,right);
                     cls(right);
                 }
+                if(!strcmp(left,"undo")){
+                    cls(right);
+                    for(int i=6;i<strlen(command);i++){
+                        right[i-6]=command[i];
+                    }
+                    undo(right);
+                    strcpy(name,right);
+                    cls(right);
+                }
                 cls(left);
                 cls(command);
                 wclear(win4);
@@ -182,6 +202,23 @@ int main()
                 wprintw(win4,"%c",c);
                 wrefresh(win4);
             }
+            else if(flag1==1){
+                cls(tmp);
+                while(c!='\n'){
+                    if(c!='\n'){
+                        int len=strlen(tmp);
+                        tmp[len]=c;
+                        wprintw(win4,"%c",c);
+                        wrefresh(win4);
+                    }
+                    c=getch();
+                }
+                flag1=0;
+                wclear(win4);
+                wrefresh(win4);
+                new_find(tmp,buffer);
+                cls(tmp);
+            }
             else if(c=='i'){
                 mode=1;
             }
@@ -191,8 +228,43 @@ int main()
             else if(c=='h' || c=='j' || c=='k' || c=='l'){
                 navigation(c);
             }
-            else if(c==':' || c=='/'){
+            else if(c==':'){
                 flag=1;
+                wprintw(win4,"%c",c);
+                wrefresh(win4);
+            }
+            else if(c=='='){
+                fclose(file_buff);
+                auto_indent("file_buff.txt");
+                clear();
+                refresh();
+                windows(buffer);
+                wclear(win4);
+                wrefresh(win4);
+                int count=1;
+                file_buff=fopen("file_buff.txt","r");
+                char ch=0;
+                printw("%6d ",count);
+                while(ch!=EOF){
+                    ch=getc(file_buff);
+                    if(ch!=EOF && ch!='\n'){
+                        printw("%c",ch);
+                        refresh();
+                    }
+                    if(ch=='\n'){
+                        count++;
+                        int x,y;
+                        getyx(stdscr,y,x);
+                        move(y+1,0);
+                        printw("%6d ",count);
+                        refresh();
+                    }
+                }
+                fclose(file_buff);
+                file_buff=fopen("file_buff.txt","a");
+            }
+            else if(c=='/'){
+                flag1=1;
                 wprintw(win4,"%c",c);
                 wrefresh(win4);
             }
@@ -279,6 +351,9 @@ int main()
             char ch;
             while(mode==2){
                 ch=getch();
+                if(ch=='h' || ch=='j' || ch=='k' || ch=='l'){
+                    navigation(ch);
+                }
                 if(ch==27){
                     mode=0;
                     break;
@@ -337,7 +412,9 @@ void navigation(char ch){
     int c4=mvinch(y,x-1);
     int c=mvinch(y,x);
     char temp[MAX_SIZE];
-    if(ch=='h' && x>7 && c4!=32){
+    //move(10,10);
+    //printw("%d",c);
+    if(ch=='h' && x>7){
         move(y,x-1);
         refresh();
     }
@@ -374,7 +451,7 @@ void navigation(char ch){
         }
     }
     else if(ch=='j'){
-        if(x>23){
+        /*if(x>23){
             fclose(file);
             file=fopen("file.txt","r");
             char m=0;
@@ -402,7 +479,7 @@ void navigation(char ch){
             file=fopen("file.txt","a");
             refresh();
             return;
-        }
+        }*/
         for(int i=x;i>=7;i--){
             c2=mvinch(y+1,i);
             c=mvinch(y,x);
@@ -465,4 +542,102 @@ void open_file(char name[],char buffer[]){
     }
     fclose(file_open);
     refresh();
+}
+
+void new_find(char tmp[],char buffer[]){
+    int *options=(int *)malloc(sizeof(int)*4);
+    *(options)=0;
+    *(options+1)=0;
+    *(options+2)=0;
+    *(options+3)=1;
+    char locations[MAX_SIZE]={0};
+    fclose(file_buff);
+    arm_activate=1;
+    find("file_buff.txt",tmp,options,1,locations);
+    if(locations[0]=='-'){
+        file_buff=fopen("file_buff.txt","a");
+        return;
+    }
+    int flag=0;
+    int find_loc[MAX_SIZE]={0};
+    int count=0;
+    for(int i=0;i<strlen(locations)-1;i++){
+        if(locations[i]>='0' && locations[i]<='9'){
+            flag=1;
+            find_loc[count]=find_loc[count]*10 + (locations[i]-48);
+        }
+        if(locations[i]==' '){
+            flag=0;
+            count++;
+        }
+    }
+    clear();
+    windows(buffer);
+    wclear(win4);
+    wrefresh(win4);
+    refresh();
+    file_buff=fopen("file_buff.txt","r");
+    int counter=1;
+    printw("%6d ",counter);
+    int char_number=0;
+    char c=0;
+    while(c!=EOF){
+        c=getc(file_buff);
+        char_number++;
+        if(c!=EOF && c!='\n'){
+            if(check_loc(count+1,find_loc,char_number-1,strlen(tmp))){
+                init_pair(5, COLOR_RED, COLOR_BLACK);
+                attron(COLOR_PAIR(5) | A_BOLD);
+                printw("%c",c);
+                refresh();
+                attroff(COLOR_PAIR(5) | A_BOLD);
+            }
+            else{
+                printw("%c",c);
+                refresh();
+            }
+        }
+        if(c=='\n'){
+            counter++;
+            int x,y;
+            getyx(stdscr,y,x);
+            move(y+1,0);
+            printw("%6d ",counter);
+            refresh();
+        }
+    }
+    fclose(file_buff);
+    windows(buffer);
+    c=getch();
+    if(c!='n'){
+        clear();
+        refresh();
+        windows(buffer);
+        wclear(win4);
+        wrefresh(win4);
+        int count=1;
+        file_buff=fopen("file_buff.txt","r");
+        char ch=0;
+        printw("%6d ",count);
+        while(ch!=EOF){
+            ch=getc(file_buff);
+            if(ch!=EOF && ch!='\n'){
+                printw("%c",ch);
+                refresh();
+            }
+            if(ch=='\n'){
+                count++;
+                int x,y;
+                getyx(stdscr,y,x);
+                move(y+1,0);
+                printw("%6d ",count);
+                refresh();
+            }
+        }
+        //else{
+
+        //}
+        fclose(file_buff);
+        file_buff=fopen("file_buff.txt","a");
+    }
 }
