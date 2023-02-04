@@ -175,12 +175,12 @@ void file_name_2(char address[],char buffer[]){
 
 void file_name_3(char address[],char buffer[]){
     cls(buffer);
-    int count=strlen(address)-1;
-    while(address[count-1]!='/'){
-        count--;
+    int c=strlen(address)-1;
+    while(address[c-1]!='/'){
+        c--;
     }
-    for(int i=count;i<strlen(address);i++){
-        buffer[i-count]=address[i];
+    for(int i=c;i<strlen(address);i++){
+        buffer[i-c]=address[i];
     }
 }
 

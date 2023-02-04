@@ -5,22 +5,32 @@
 #include <string.h>
 #include<unistd.h>
 #include "prototypes.h"
+
+WINDOW *win1;
+WINDOW * win2;
+WINDOW * win3,*win4;
+FILE * file;
+FILE * file_buff;
+FILE * file_open;
+
 int width=0;
 int heigth=50;
 int mode=0;
-void windows();
+void windows(char name[]);
 void navigation(char ch);
+void save(char name[]);
+void open_file(char name[],char buffer[]);
+
 int main()
 {
-    FILE *file=fopen("file.txt","w");
-    FILE *file_buff=fopen("file_buff.txt","w");
-    FILE *f=fopen("root/file.txt","w");
-    fclose(f);
+    char buffer[MAX_SIZE]="New file     +";
+    file=fopen("file.txt","w");
+    file_buff=fopen("file_buff.txt","w");
     initscr();
     refresh();
     noecho();
     start_color();
-    windows();
+    windows(buffer);
     refresh();
     int countEnters=1;
     int termination=1;
@@ -28,27 +38,54 @@ int main()
     char command[MAX_SIZE];
     cls(command);
     int count=0;
+    int for_name=0;
     char temp[MAX_SIZE];
     char left[MAX_SIZE];
     char right[MAX_SIZE];
+    char name[MAX_SIZE];
     while(termination){
         refresh();
         char c=0;
         int flag=0;
         init_pair(4, COLOR_WHITE, COLOR_BLACK);
         attron(COLOR_PAIR(4) | A_BOLD);
-        WINDOW *win4=newwin(1,200,29,0);
+        win4=newwin(1,200,29,0);
         wbkgd(win4,COLOR_PAIR(4));
         attroff(COLOR_PAIR(4) | A_BOLD);
         wrefresh(win4);
         while(mode==0){
             refresh();
-            windows();
+            windows(buffer);
             curs_set(1);
             c=getch();
-            if(flag==1 && c=='\n'){
+            if(for_name && c!='\n'){
+                flag=1;
+                int length=strlen(buffer);
+                buffer[length]=c;
+                wprintw(win4,"%c",c);
+                wrefresh(win4);
+            }
+            else if(flag==1 && c=='\n'){
                 flag=0;
                 int j=0;
+                if(for_name){
+                    cls(name);
+                    for(int i=1;i<strlen(buffer);i++){
+                        name[i-1]=buffer[i];
+                    }
+                    save(name);
+                    for_name=0;
+                    file_name_3(name,buffer);
+                    //cls(name);
+                    //strcat(buffer,"     +");
+                    wclear(win2);
+                    wrefresh(win2);
+                    wprintw(win2,"  %s",buffer);
+                    wrefresh(win2);
+                    wclear(win4);
+                    wrefresh(win4);
+                    continue;
+                }
                 while(command[j]!=' ' && j<=count){
                     left[j]=command[j];
                     j++;
@@ -69,16 +106,70 @@ int main()
                             putc(ch,new_file);
                         }
                     }
+                    strcpy(name,right);
+                    file_name_3(right,buffer);
+                    //strcat(buffer,"     +");
                     cls(right);
                     fclose(file_buff);
                     fclose(new_file);
                     file_buff=fopen("file_buff.txt","a");
-
                     wclear(win4);
                     wrefresh(win4);
                     wprintw(win4,"Success");
                     wrefresh(win4);
                     usleep(1000000);
+                    wclear(win2);
+                    wrefresh(win2);
+                    wprintw(win2,"  %s",buffer);
+                    wrefresh(win2);
+                }
+                if(!strcmp(left,"save")){
+                    if(strstr(buffer,"New file")!=NULL){
+                        cls(buffer);
+                        wclear(win4);
+                        wrefresh(win4);
+                        wprintw(win4,"Please choose a name for your file. ");
+                        wrefresh(win4);
+                        for_name=1;
+                        continue;
+                    }
+                    else{
+                        file_name_3(name,buffer);
+                        save(name);
+                    }
+                }
+                if(!strcmp(left,"open")){
+                    if(strstr(buffer,"New file")!=NULL){
+                        cls(buffer);
+                        wclear(win4);
+                        wrefresh(win4);
+                        wprintw(win4,"Please choose a name for your file. ");
+                        wrefresh(win4);
+                        char c=0;
+                        c=getch();
+                        wprintw(win4,"%c",c);
+                        wrefresh(win4);
+                        while(c!='\n'){
+                            c=getch();
+                            if(c!='\n'){
+                                int length=strlen(buffer);
+                                buffer[length]=c;
+                                wprintw(win4,"%c",c);
+                                wrefresh(win4);
+                            }
+                        }
+                        save(buffer);
+                    }
+                    else{
+                        save(name);
+                    }
+                    cls(right);
+                    for(int i=6;i<strlen(command);i++){
+                        right[i-6]=command[i];
+                    }
+                    open_file(right,buffer);
+                    strcpy(name,right);
+                    cls(right);
                 }
                 cls(left);
                 cls(command);
@@ -111,7 +202,10 @@ int main()
             }
         }
         if(mode==1){
-            windows();
+            if(strstr(buffer,"+")==NULL){
+                strcat(buffer,"     +");
+            }
+            windows(buffer);
             curs_set(2);
             char ch=0;
             if(t==1){
@@ -136,7 +230,7 @@ int main()
                         curs_set(0);
                         //move(0,0);
                         refresh();
-                        windows();
+                        windows(buffer);
                         fclose(file);
                         file=fopen("file.txt","r");
                         char m=0;
@@ -144,10 +238,19 @@ int main()
                         while(m!=EOF){
                             m=getc(file);
                             if(m=='\n'){
-                               n++;
+                                n++;
                             }
-                            if(n>countEnters-27)
-                            printw("%c",m);
+                            if(n>countEnters-27 && m!='\n' && m!=EOF){
+                                printw("%c",m);
+                                refresh();
+                            }
+                            if(n>countEnters-27 && m=='\n'){
+                                int y,x;
+                                getyx(stdscr,y,x);
+                                move(y+1,0);
+                                //printw("%6d ",count);
+                                refresh();
+                            }
                         }
                         refresh();
                         fclose(file);
@@ -172,7 +275,7 @@ int main()
         }
         if(mode==2){
             curs_set(1);
-            windows();
+            windows(buffer);
             char ch;
             while(mode==2){
                 ch=getch();
@@ -189,11 +292,11 @@ int main()
     return 0;
 }
 
-void windows(){
+void windows(char name[]){
     //clear();
     init_pair(1, COLOR_BLACK, COLOR_CYAN);
 	attron(COLOR_PAIR(1) | A_BOLD);
-    WINDOW *win1=newwin(1,15,28,0);
+    win1=newwin(1,15,28,0);
     wbkgd(win1,COLOR_PAIR(1));
     if(mode==0){
         wprintw(win1,"    NORMAL");
@@ -209,15 +312,15 @@ void windows(){
     init_color(COLOR_GREEN,300,300,300);
     init_pair(2, COLOR_WHITE, COLOR_GREEN);
     attron(COLOR_PAIR(2) | A_BOLD);
-    WINDOW * win2=newwin(1,30,28,15);
+    win2=newwin(1,30,28,15);
     wbkgd(win2,COLOR_PAIR(2));
-    wprintw(win2,"  New file.txt");
+    wprintw(win2,"  %s",name);
     attroff(COLOR_PAIR(2) | A_BOLD);
     wrefresh(win2);
     init_color(COLOR_MAGENTA,250,250,250);
     init_pair(3, COLOR_BLACK, COLOR_MAGENTA);
     attron(COLOR_PAIR(3) | A_BOLD);
-    WINDOW * win3=newwin(1,200,28,45);
+    win3=newwin(1,200,28,45);
     wbkgd(win3,COLOR_PAIR(3));
     attroff(COLOR_PAIR(3) | A_BOLD);
     wrefresh(win3);
@@ -244,18 +347,18 @@ void navigation(char ch){
     }
     else if(ch=='k'){
         int f=0;
-        if(x>24){
+        /*if(x<4){
             FILE *file=fopen("file.txt","r");
             for(int i=0;i<x;i++){
                 fgets(temp,MAX_SIZE,file);
-                if(i>x-24)
+                if(i>)
                     printw("%6d %s",i,temp);
                     refresh();
             }
             fclose(file);
             curs_set(2);
             return;
-        }
+        }*/
         for(int i=x;i>=7;i--){
             c3=mvinch(y-1,i);
             c=mvinch(y,x);
@@ -271,6 +374,35 @@ void navigation(char ch){
         }
     }
     else if(ch=='j'){
+        if(x>23){
+            fclose(file);
+            file=fopen("file.txt","r");
+            char m=0;
+            int n=1;
+            while(m!=EOF){
+                m=getc(file);
+                if(m=='\n'){
+                    n++;
+                }
+                if(n>x-23 && m!='\n' && m!=EOF){
+                    printw("%c",m);
+                    refresh();
+                }
+                if(n>x-23 && m=='\n'){
+                    int y,x;
+                    getyx(stdscr,y,x);
+                    move(y+1,0);
+                    //printw("%6d ",count);
+                    refresh();
+                }
+            }
+            refresh();
+            fclose(file);
+            curs_set(2);
+            file=fopen("file.txt","a");
+            refresh();
+            return;
+        }
         for(int i=x;i>=7;i--){
             c2=mvinch(y+1,i);
             c=mvinch(y,x);
@@ -281,4 +413,56 @@ void navigation(char ch){
             }
         }
     }
+}
+
+void save(char name[]){
+    FILE *new_file=fopen(name,"w");
+    fclose(file_buff);
+    file_buff=fopen("file_buff.txt","r");
+    char ch='a';
+    while(ch!=EOF){
+        ch=getc(file_buff);
+        if(ch!=EOF){
+            putc(ch,new_file);
+        }
+    }
+    fclose(file_buff);
+    fclose(new_file);
+    file_buff=fopen("file_buff.txt","a");
+    wclear(win4);
+    wrefresh(win4);
+    wprintw(win4,"Success");
+    wrefresh(win4);
+    usleep(1000000);
+}
+
+void open_file(char name[],char buffer[]){
+    char c=0;
+    int count=1;
+    char temp[MAX_SIZE];
+    file_name_3(name,buffer);
+    clear();
+    windows(buffer);
+    wclear(win4);
+    wrefresh(win4);
+    refresh();
+    file_open=fopen(name,"r");
+    printw("%6d ",count);
+    while(c!=EOF){
+        c=getc(file_open);
+        if(c!=EOF && c!='\n'){
+            printw("%c",c);
+            refresh();
+        }
+        if(c=='\n'){
+            count++;
+            int x,y;
+            getyx(stdscr,y,x);
+            move(y+1,0);
+            printw("%6d ",count);
+            refresh();
+        }
+    }
+    fclose(file_open);
+    refresh();
 }
