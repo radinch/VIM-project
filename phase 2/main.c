@@ -2,26 +2,35 @@
 #include <stdlib.h>
 #include <ncurses.h>
 #include <time.h>
-#define MAX_SIZE 1000
+#include <string.h>
+#include<unistd.h>
+#include "prototypes.h"
 int width=0;
 int heigth=50;
 int mode=0;
 void windows();
 void navigation(char ch);
-
 int main()
 {
     FILE *file=fopen("file.txt","w");
+    FILE *file_buff=fopen("file_buff.txt","w");
+    FILE *f=fopen("root/file.txt","w");
+    fclose(f);
     initscr();
     refresh();
     noecho();
     start_color();
     windows();
     refresh();
-    long countEnters=1;
+    int countEnters=1;
     int termination=1;
     int t=1; //avoid printing wrong line numbers
+    char command[MAX_SIZE];
+    cls(command);
+    int count=0;
     char temp[MAX_SIZE];
+    char left[MAX_SIZE];
+    char right[MAX_SIZE];
     while(termination){
         refresh();
         char c=0;
@@ -39,10 +48,46 @@ int main()
             c=getch();
             if(flag==1 && c=='\n'){
                 flag=0;
+                int j=0;
+                while(command[j]!=' ' && j<=count){
+                    left[j]=command[j];
+                    j++;
+                }
+                count=0;
+                if(!strcmp(left,"saveas")){
+                    cls(right);
+                    for(int i=8;i<strlen(command);i++){
+                        right[i-8]=command[i];
+                    }
+                    FILE *new_file=fopen(right,"w");
+                    fclose(file_buff);
+                    file_buff=fopen("file_buff.txt","r");
+                    char ch='a';
+                    while(ch!=EOF){
+                        ch=getc(file_buff);
+                        if(ch!=EOF){
+                            putc(ch,new_file);
+                        }
+                    }
+                    cls(right);
+                    fclose(file_buff);
+                    fclose(new_file);
+                    file_buff=fopen("file_buff.txt","a");
+
+                    wclear(win4);
+                    wrefresh(win4);
+                    wprintw(win4,"Success");
+                    wrefresh(win4);
+                    usleep(1000000);
+                }
+                cls(left);
+                cls(command);
                 wclear(win4);
                 wrefresh(win4);
             }
             else if(flag==1){
+                command[count]=c;
+                count++;
                 wprintw(win4,"%c",c);
                 wrefresh(win4);
             }
@@ -77,36 +122,44 @@ int main()
                     attron(A_DIM);
                     if(mode==1){
                         printw("%6d ",countEnters);
+                        fprintf(file,"%6d ",countEnters);
                     }
                     attroff(A_DIM);
                 }
                 ch=getch();
                 attron(A_BOLD);
-                if(ch!=27){
-                    printw("%c",ch);
-                    putc(ch,file);
-                }
                 attroff(A_BOLD);
                 if(ch=='\n'){
                     countEnters++;
                     if(countEnters>27){
-                        //clear();
+                        clear();
                         curs_set(0);
-                        move(0,0);
+                        //move(0,0);
                         refresh();
                         windows();
                         fclose(file);
                         file=fopen("file.txt","r");
-                        for(int i=0;i<countEnters;i++){
-                            fgets(temp,MAX_SIZE,file);
-                            if(i>countEnters-27)
-                                printw("%6d %s",i,temp);
-                                refresh();
+                        char m=0;
+                        int n=1;
+                        while(m!=EOF){
+                            m=getc(file);
+                            if(m=='\n'){
+                               n++;
+                            }
+                            if(n>countEnters-27)
+                            printw("%c",m);
                         }
+                        refresh();
                         fclose(file);
                         curs_set(2);
                         file=fopen("file.txt","a");
+                        refresh();
                     }
+                }
+                if(ch!=27){
+                    printw("%c",ch);
+                    putc(ch,file);
+                    putc(ch,file_buff);
                 }
                 if(ch==27){
                     mode=0;
@@ -131,6 +184,7 @@ int main()
         }
     }
     fclose(file);
+    fclose(file_buff);
     endwin();
     return 0;
 }
