@@ -10,30 +10,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7a76f801-6d88-417c-9ad9-d8b071fc5fb9" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/project.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/project.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/file_buff.txt" beforeDir="false" afterPath="$PROJECT_DIR$/file_buff.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project.depend" beforeDir="false" afterPath="$PROJECT_DIR$/project.depend" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project.layout" beforeDir="false" afterPath="$PROJECT_DIR$/project.layout" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/root/f.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/root/f1/m1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/root/f1/m2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/root/f1/m3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/root/f1/salam/salam salam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/root/f2/c1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/root/f2/c2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/root/f3/b1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/root/f3/b2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/root/file.txt" beforeDir="false" afterPath="$PROJECT_DIR$/root/file.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/root/file1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/u/f.txt" beforeDir="false" afterPath="$PROJECT_DIR$/u/f.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/u/file.txt" beforeDir="false" afterPath="$PROJECT_DIR$/u/file.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/u/file1.txt" beforeDir="false" afterPath="$PROJECT_DIR$/u/file1.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../phase 2/phase 2.layout" beforeDir="false" afterPath="$PROJECT_DIR$/../phase 2/phase 2.layout" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../phase 2/root/file.txt" beforeDir="false" afterPath="$PROJECT_DIR$/../phase 2/root/file.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../phase 2/root/radin.txt" beforeDir="false" afterPath="$PROJECT_DIR$/../phase 2/root/radin.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../phase 2/run" beforeDir="false" afterPath="$PROJECT_DIR$/../phase 2/run" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.exe" beforeDir="false" afterPath="$PROJECT_DIR$/main.exe" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -89,6 +67,9 @@
       <workItem from="1674152872803" duration="2000" />
       <workItem from="1676228939959" duration="62000" />
       <workItem from="1676229046245" duration="110000" />
+      <workItem from="1726052010823" duration="276000" />
+      <workItem from="1726052415808" duration="5000" />
+      <workItem from="1726052433781" duration="32000" />
     </task>
     <servers />
   </component>
