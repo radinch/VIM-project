@@ -1,2 +1,2 @@
-# project-radinch
-Radin Cheraghi 401105815
+# VIM project
+Radin Cheraghi
